@@ -83,11 +83,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
                             // bellman-ford update 
                             if to_distance > bf_data[to_idx].0 {
                                 bf_data[to_idx].0 = to_distance;
-                                if to_idx > 0 {
-                                    bf_data[to_idx].1 = from_idx;
-                                } else {
-                                    return Err(ILPError::Unbounded);
-                                }
+                                bf_data[to_idx].1 = from_idx;
                             }
 
                             to_idx
@@ -137,11 +133,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
                 let to_distance = bf_data[from].0 + cost;
                 if to_distance > bf_data[to].0 {
                     bf_data[to].0 = to_distance;
-                    if to > 0 {
-                        bf_data[to].1 = from;
-                    } else {
-                        return Err(ILPError::Unbounded);
-                    }
+                    bf_data[to].1 = from;
                     changed = true;
                 }
             }

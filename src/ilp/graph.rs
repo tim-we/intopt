@@ -3,16 +3,20 @@ use std::ops::Range;
 use super::Vector;
 use std::slice::Iter;
 
-type Edge = (usize,usize,i32,u16);
+pub type NodeIdx = usize;
+pub type Cost = i32;
+pub type ColumnIdx = u8;
+
+pub type Edge = (NodeIdx, NodeIdx, Cost, ColumnIdx);
 
 pub struct Node {
-    idx: usize,
+    idx: NodeIdx,
     edges: Vec<Edge>
 }
 
 pub struct VectorDiGraph {
     nodes: Vec<Node>,
-    map: FnvHashMap<Vector, usize> // maps Vector -> idx
+    map: FnvHashMap<Vector, NodeIdx>
 }
 
 impl VectorDiGraph {
@@ -27,18 +31,18 @@ impl VectorDiGraph {
         self.nodes.len()
     }
 
-    fn next_idx(&self) -> usize {
-        self.size()
+    fn next_idx(&self) -> NodeIdx {
+        self.size() as NodeIdx
     }
 
-    pub fn get_idx_by_vec(&self, v:&Vector) -> Option<usize> {
+    pub fn get_idx_by_vec(&self, v:&Vector) -> Option<NodeIdx> {
         match self.map.get(v) {
             Some(&idx) => Some(idx),
             None       => None
         }
     }
 
-    pub fn add_node(&mut self, v:Vector) -> usize {
+    pub fn add_node(&mut self, v:Vector) -> NodeIdx {
         let node = Node {
             idx: self.next_idx(),
             edges: Vec::new()
@@ -50,7 +54,7 @@ impl VectorDiGraph {
         node_idx
     }
 
-    pub fn add_edge(&mut self, from: usize, to: usize, cost: i32, idx: u16) {
+    pub fn add_edge(&mut self, from: NodeIdx, to: NodeIdx, cost: Cost, idx: ColumnIdx) {
         let edge = (from, to, cost, idx);
         self.nodes[from].edges.push(edge);
     }

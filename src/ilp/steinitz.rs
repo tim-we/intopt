@@ -54,7 +54,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     }
 
     // bellman-ford data (distance, predecessor, matrix column index)
-    let mut bf_data = Vec::<(i64,usize,u16)>::new();
+    let mut bf_data = Vec::<(Cost, NodeIdx, ColumnIdx)>::new();
     bf_data.push((0,0,0));
 
     // construct graph
@@ -71,7 +71,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
                 // ||xp - d*b|| <= bound
                 if is_in_bounds(&xp, &ilp.b, s, bound) {
                     let cost = ilp.c.data[i];
-                    let to_distance = bf_data[from_idx].0 + cost as i64;
+                    let to_distance = bf_data[from_idx].0 + cost;
                     
 
                     let to_idx = match graph.get_idx_by_vec(&xp) {
@@ -93,12 +93,12 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
                         None => {
                             // add new node
                             new_surface.insert(xp.clone());
-                            bf_data.push((to_distance, from_idx, i as u16));
+                            bf_data.push((to_distance, from_idx, i as ColumnIdx));
                             graph.add_node(xp)
                         }
                     };
 
-                    graph.add_edge(from_idx, to_idx, cost, i as u16);
+                    graph.add_edge(from_idx, to_idx, cost, i as ColumnIdx);
                 }
             }
         }
@@ -132,7 +132,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
 
         for node_idx in graph.iter_nodes() {
             for &(from, to, cost, _) in graph.iter_edges(node_idx) {
-                let to_distance = bf_data[from].0 + cost as i64;
+                let to_distance = bf_data[from].0 + cost;
                 if to_distance > bf_data[to].0 {
                     bf_data[to].0 = to_distance;
                     if to > 0 {

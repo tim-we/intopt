@@ -153,16 +153,6 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
 
     println!(" -> {} Bellman-Ford iterations, t={:?}", iterations, start.elapsed());
 
-    println!(" -> Checking if problem is unbounded...");
-    // check for positive weight cycle
-    for node_idx in graph.iter_nodes() {
-        for &(from, to, cost, _) in graph.iter_edges(node_idx) {
-            if bf_data[from].0 + cost as i64 > bf_data[to].0 {
-                return Err(ILPError::Unbounded);
-            }
-        }
-    }
-
     println!(" -> Longest path distance: {:?}", bf_data[b_idx].0);
 
     // create solution vector
@@ -171,8 +161,17 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     let mut x = Vector::zero(columns);
     let mut node = b_idx;
 
+    // start from b and go backwards to 0
     for _ in 0..bf_data.len() {
         let (_, predecessor, column) = bf_data[node];
+
+        if predecessor == b_idx {
+            return Err(ILPError::Unbounded);
+        } else {
+            // mark node as visited
+            bf_data[node].1 = b_idx;
+        }
+
         node = predecessor;
         x.data[column as usize] += 1;
 

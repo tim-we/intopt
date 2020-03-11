@@ -7,6 +7,9 @@ fn main() {
     let mat = Matrix::from_slice(6, 6, &[1,0,0,0,0,0, 0,1,0,0,0,0, 0,0,1,0,0,0, 0,0,0,1,0,0, 0,0,0,1,1,0, 1,0,0,0,0,1]);
     let b = Vector::from_slice(&[1, 0, 0, 1, 1, 1]);
     let c = Vector::from_slice(&[1, 2, 3, 4, 3, 2]);
+    /*let mat = Matrix::from_slice(3, 3, &[1,0,0,0,2,0,0,0,1]);
+    let b = Vector::from_slice(&[5, 6, 5]);
+    let c = Vector::from_slice(&[1, 2, 3]);*/
 
     let ilp = ILP::new(mat, b, c);
 

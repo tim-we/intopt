@@ -1,9 +1,10 @@
 use num_traits::Float;
 use super::{ILP, Vector, ILPError};
-use fnv::FnvHashSet;
 use std::f64;
 use std::time::Instant;
 use super::graph::*;
+
+type Set<T> = hashbrown::HashSet<T>; //fnv::FnvHashSet<T>;
 
 /* 
     based on https://arxiv.org/abs/1707.00481v3    
@@ -42,8 +43,8 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     let mut graph = VectorDiGraph::new();
 
     // construction surface
-    let mut surface:FnvHashSet<Vector> = FnvHashSet::default();
-    let mut new_surface:FnvHashSet<Vector> = FnvHashSet::default();
+    let mut surface:Set<Vector> = Set::default();
+    let mut new_surface:Set<Vector> = Set::default();
     let mut max_surface_size = 1;
 
     // add origin

@@ -1,7 +1,8 @@
-use fnv::{FnvHashMap};
 use std::ops::Range;
 use super::Vector;
 use std::slice::Iter;
+
+type Map<K,V> = hashbrown::HashMap<K,V>; //fnv::FnvHashMap<T>;
 
 pub type NodeIdx = usize;
 pub type Cost = i32;
@@ -16,14 +17,14 @@ pub struct Node {
 
 pub struct VectorDiGraph {
     nodes: Vec<Node>,
-    map: FnvHashMap<Vector, NodeIdx>
+    map: Map<Vector, NodeIdx>
 }
 
 impl VectorDiGraph {
     pub fn new() -> Self {
         VectorDiGraph {
             nodes: Vec::new(),
-            map: FnvHashMap::default()
+            map: Map::default()
         }
     }
 

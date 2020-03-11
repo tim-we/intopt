@@ -1,4 +1,3 @@
-use std::hash::Hash;
 use std::cmp::max;
 
 pub mod steinitz;

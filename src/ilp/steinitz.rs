@@ -45,8 +45,8 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     let mut graph = VectorDiGraph::with_capacity(16384, columns);
 
     // construction surface
-    let mut surface:Set<Vector> = Set::default();
-    let mut new_surface:Set<Vector> = Set::default();
+    let mut surface:Set<Vector> = Set::with_capacity(16384);
+    let mut new_surface:Set<Vector> = Set::with_capacity(16384);
     let mut max_surface_size = 1;
 
     // add origin

@@ -1,7 +1,5 @@
 use super::{ILP, Vector, ILPError};
-use std::collections::HashSet;
-//use fnv::FnvHashSet;
-//use fnv::FnvBuildHasher;
+use fnv::FnvHashSet;
 use std::f64;
 use std::time::Instant;
 use super::graph::*;
@@ -43,8 +41,8 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     let mut graph = VectorDiGraph::new();
 
     // construction surface
-    let mut surface:HashSet<Vector> = HashSet::with_capacity(1);
-    let mut new_surface:HashSet<Vector> = HashSet::with_capacity(columns);
+    let mut surface:FnvHashSet<Vector> = FnvHashSet::default();
+    let mut new_surface:FnvHashSet<Vector> = FnvHashSet::default();
     let mut max_surface_size = 1;
 
     // add origin

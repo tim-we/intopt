@@ -1,6 +1,5 @@
 use num_traits::Float;
 use super::{ILP, Vector, ILPError};
-use std::f64;
 use std::time::Instant;
 use super::graph::*;
 
@@ -34,9 +33,10 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     let start = Instant::now();
 
     // constants
-    let r = 1.0 / ilp.b.norm();
+    let r = 1.0 / ilp.b.norm() as f32;
     let (rows, columns) = ilp.A.size; // (m,n)
-    let bound = 1.5 * (rows as i32 * ilp.delta) as f64;
+    let b_float = ilp.b.as_f32_vec();
+    let bound = 1.5 * (rows as i32 * ilp.delta) as f32;
     let ts_size_bound = ((2.0*bound) as i32 + 1).pow(rows as u32);
     println!(" -> Using {} as the bound for the tube set.", bound);
     println!(" -> Tube set size bound: {}", ts_size_bound);
@@ -69,13 +69,12 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
             for i in 0..columns {
                 let v = &ilp.A.columns[i];
                 let xp = x.add(v);
-                let s = clamp(xp.dot(&ilp.b) as f64 * r, 0.0, 1.0);
+                let s = clamp(xp.dot(&ilp.b) as f32 * r, 0.0, 1.0);
 
                 // ||xp - d*b|| <= bound
-                if is_in_bounds(&xp, &ilp.b, s, bound) {
+                if is_in_bounds(&xp, &b_float, s, bound) {
                     let cost = ilp.c.data[i];
                     let to_distance = bf_data[from_idx].0 + cost;
-                    
 
                     let to_idx = match graph.get_idx_by_vec(&xp) {
                         Some(to_idx) => {
@@ -194,11 +193,11 @@ fn clamp<T: Float>(x:T, min: T, max: T) -> T {
 }
 
 /// ||x - s*b||_{inf} <= bound
-fn is_in_bounds(x:&Vector, b:&Vector, s:f64, bound:f64) -> bool {
+fn is_in_bounds(x:&Vector, b:&Vec<f32>, s:f32, bound:f32) -> bool {
     let mut max = 0.0;
 
     for i in 0..x.len() {
-        let d = (x.data[i] as f64 - (s * b.data[i] as f64)).abs();
+        let d = (x.data[i] as f32 - (s * b[i])).abs();
         
         if d > max {
             max = d;

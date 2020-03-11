@@ -120,6 +120,16 @@ impl Vector {
 
         max
     }
+
+    pub fn as_f32_vec(&self) -> Vec<f32> {
+        let mut v = Vec::with_capacity(self.data.len());
+
+        for &x in self.data.iter() {
+            v.push(x as f32);
+        }
+
+        v
+    }
 }
 
 impl Matrix {

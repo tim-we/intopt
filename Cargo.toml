@@ -1,0 +1,9 @@
+[package]
+name = "intopt"
+version = "0.1.0"
+authors = ["Tim Weißenfels <tim.weissenfels@outlook.com>"]
+edition = "2018"
+
+[dependencies]
+petgraph = "0.5.0"
+fnv = "1.0.6"

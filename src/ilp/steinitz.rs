@@ -1,3 +1,4 @@
+use num_traits::Float;
 use super::{ILP, Vector, ILPError};
 use fnv::FnvHashSet;
 use std::f64;
@@ -183,10 +184,10 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     Ok(x)
 }
 
-fn clamp(x:f64, min: f64, max: f64) -> f64 {
+fn clamp<T: Float>(x:T, min: T, max: T) -> T {
     assert!(min <= max);
 
-    f64::min(f64::max(min, x), max)
+    T::min(T::max(min, x), max)
 }
 
 /// ||x - s*b||_{inf} <= bound

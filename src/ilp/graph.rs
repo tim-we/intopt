@@ -17,14 +17,16 @@ pub struct Node {
 
 pub struct VectorDiGraph {
     nodes: Vec<Node>,
-    map: Map<Vector, NodeIdx>
+    map: Map<Vector, NodeIdx>,
+    edges_per_node: usize
 }
 
 impl VectorDiGraph {
-    pub fn new() -> Self {
+    pub fn with_capacity(node_capacity:usize, edges:usize) -> Self {
         VectorDiGraph {
-            nodes: Vec::new(),
-            map: Map::default()
+            nodes: Vec::with_capacity(node_capacity),
+            map: Map::with_capacity(node_capacity),
+            edges_per_node: edges
         }
     }
 
@@ -46,7 +48,7 @@ impl VectorDiGraph {
     pub fn add_node(&mut self, v:Vector) -> NodeIdx {
         let node = Node {
             idx: self.next_idx(),
-            edges: Vec::new()
+            edges: Vec::with_capacity(self.edges_per_node)
         };
         let node_idx = node.idx;
         self.nodes.push(node);

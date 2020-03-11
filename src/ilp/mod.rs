@@ -10,7 +10,7 @@ pub struct Vector {
 
 pub struct Matrix {
     columns: Vec<Vector>,
-    size: (usize, usize) // rows, columns
+    size: (usize, usize) // rows, columns or (m,n)
 }
 
 #[allow(non_snake_case)]

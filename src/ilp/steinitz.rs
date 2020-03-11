@@ -35,12 +35,14 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
 
     // constants
     let r = 1.0 / ilp.b.norm();
-    let (rows, columns) = ilp.A.size;
+    let (rows, columns) = ilp.A.size; // (m,n)
     let bound = 1.5 * (rows as i32 * ilp.delta) as f64;
+    let ts_size_bound = ((2.0*bound) as i32 + 1).pow(rows as u32);
     println!(" -> Using {} as the bound for the tube set.", bound);
+    println!(" -> Tube set size bound: {}", ts_size_bound);
 
     // graph
-    let mut graph = VectorDiGraph::new();
+    let mut graph = VectorDiGraph::with_capacity(16384, columns);
 
     // construction surface
     let mut surface:Set<Vector> = Set::default();

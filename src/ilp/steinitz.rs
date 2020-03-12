@@ -3,8 +3,6 @@ use super::{ILP, Vector, ILPError};
 use std::time::Instant;
 use super::graph::*;
 
-type Set<T> = hashbrown::HashSet<T>; //fnv::FnvHashSet<T>;
-
 /* 
     based on https://arxiv.org/abs/1707.00481v3    
 
@@ -46,15 +44,15 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     let mut graph = VectorDiGraph::with_capacity(16384, columns);
 
     // construction surface
-    let mut surface:Set<Vector> = Set::with_capacity(16384);
-    let mut new_surface:Set<Vector> = Set::with_capacity(16384);
+    let mut surface:Vec<Vector> = Vec::with_capacity(16384);
+    let mut new_surface:Vec<Vector> = Vec::with_capacity(16384);
     let mut max_surface_size = 1;
 
     // add origin
     {
         let zero = Vector::zero(rows);
         graph.add_node(zero.clone());
-        surface.insert(zero);
+        surface.push(zero);
     }
 
     // bellman-ford data (distance, predecessor, matrix column index)
@@ -64,7 +62,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     // construct graph
     println!(" -> Constructing the graph...");
     while !surface.is_empty() {
-        for x in surface.drain() {
+        for x in surface.drain(0..surface.len()) {
             let from_idx = graph.get_idx_by_vec(&x).unwrap();
 
             for (v,i) in ilp.A.columns.iter().zip(0..columns) {
@@ -90,7 +88,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
                         },
                         None => {
                             // add new node
-                            new_surface.insert(xp.clone());
+                            new_surface.push(xp.clone());
                             bf_data.push((to_distance, from_idx, i as ColumnIdx));
                             graph.add_node(xp)
                         }

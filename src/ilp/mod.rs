@@ -1,4 +1,3 @@
-use std::cmp::max;
 use std::slice::Iter;
 
 pub mod steinitz;
@@ -21,8 +20,8 @@ pub struct ILP {
     A: Matrix,
     b: Vector,
     c: Vector,
-    delta: IntData,
-    col_delta: IntData
+    delta_A: IntData,
+    delta_b: IntData
 }
 
 pub enum ILPError {
@@ -35,19 +34,16 @@ impl ILP {
         assert!(b.len() == mat.size.0);
         assert!(c.len() == mat.size.1);
         assert!(mat.size.0 > 0 && mat.size.1 > 0);
-    
-        let mut delta = b.inf_norm();
-    
-        for v in mat.columns.iter() {
-            delta = max(delta, v.inf_norm());
-        }
+
+        let da = mat.columns.iter().map(|col| col.inf_norm()).max().unwrap();
+        let db = b.inf_norm();
     
         ILP {
             A: mat,
             b: b,
             c: c,
-            delta: delta,
-            col_delta: delta
+            delta_A: da,
+            delta_b: db
         }
     }
 }

@@ -34,10 +34,6 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     let r = 1.0 / ilp.b.norm();
     let (rows, columns) = ilp.A.size; // (m,n)
     let b_float = ilp.b.as_f32_vec();
-    let bound = find_optimal_bound(ilp);
-    let ts_size_bound = ((2.0*bound) as i64 + 1).pow(rows as u32);
-    println!(" -> Using {} as the bound for the tube set.", bound);
-    println!(" -> Tube set size bound: {}", ts_size_bound);
 
     // graph
     let mut graph = VectorDiGraph::with_capacity(16384, columns);
@@ -55,16 +51,22 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     }
 
     // bellman-ford data (distance, predecessor, matrix column index)
-    let mut bf_data = Vec::<(Cost, NodeIdx, ColumnIdx)>::new();
+    let mut bf_data = Vec::<(Cost, NodeIdx, ColumnIdx)>::with_capacity(16384);
     bf_data.push((0,0,0));
 
     // construct graph
     println!(" -> Constructing the graph...");
+    let mut bound;
+    let mut depth = 0;
     while !surface.is_empty() {
         // pre-allocate memory for new nodes
-        graph.reserve(surface.len() * columns);
+        let max_new_nodes = surface.len() * columns;
+        graph.reserve(max_new_nodes);
+        bf_data.reserve(max_new_nodes);
 
         // grow graph
+        depth = depth+1;
+        bound = compute_bound(ilp, depth);
         for x in surface.drain(0..surface.len()) {
             let from_idx = graph.get_idx_by_vec(&x).unwrap();
 
@@ -115,7 +117,8 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     }
 
     println!(" -> Graph constructed! t={:?}", start.elapsed());
-    println!("    size: {}, max. surface size: {}", graph.size(), max_surface_size);
+    println!("    size: {}, depth: {}, max. surface size: {}", graph.size(), depth, max_surface_size);
+    println!("    radius: start={} end={}", compute_bound(ilp, 1), compute_bound(ilp, depth));
 
     let b_idx = match graph.get_idx_by_vec(&ilp.b) {
         Some(idx) => idx,
@@ -185,24 +188,28 @@ fn clamp<T: Float>(x:T, min: T, max: T) -> T {
     T::min(T::max(min, x), max)
 }
 
-fn find_optimal_bound(ilp:&ILP) -> f32 {
-    let (rows, _) = ilp.A.size;
-    // assume t>=2 thus 1+1/t<1.5, trivial solution (t=1) will always be included
-    1.5 * (rows * ilp.delta as usize) as f32
+fn compute_bound(ilp:&ILP, depth:i32) -> f32 {
+    let (m,_) = ilp.A.size;
+    let da = ilp.delta_A as f32;
+    let db = ilp.delta_b as f32;
+    let delta = f32::min(
+        2.0 * da,
+        da + (1.0/depth as f32) * db
+    );
+    delta * m as f32
 }
 
 /// ||x - s*b||_{inf} <= bound
 fn is_in_bounds(v:&Vector, b:&Vec<f32>, s:f32, bound:f32) -> bool {
     assert_eq!(v.len(), b.len());
-    let mut max = 0.0;
 
     for (&x,&b) in v.iter().zip(b.iter()) {
         let d = (x as f32 - (s * b)).abs();
         
-        if d > max {
-            max = d;
+        if d > bound {
+            return false;
         }
     }
 
-    max <= bound
+    true
 }

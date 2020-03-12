@@ -66,8 +66,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
         for x in surface.drain() {
             let from_idx = graph.get_idx_by_vec(&x).unwrap();
 
-            for i in 0..columns {
-                let v = &ilp.A.columns[i];
+            for (v,i) in ilp.A.columns.iter().zip(0..columns) {
                 let xp = x.add(v);
                 let s = clamp(xp.dot(&ilp.b) as f32 * r, 0.0, 1.0);
 
@@ -155,7 +154,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     let mut node = b_idx;
 
     // start from b and go backwards to 0
-    for _ in 0..bf_data.len() {
+    loop {
         let (_, predecessor, column) = bf_data[node];
 
         if predecessor == b_idx {

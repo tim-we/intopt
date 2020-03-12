@@ -74,8 +74,8 @@ impl Vector {
         assert_eq!(self.len(), other.len());
         let mut v = Vec::with_capacity(self.len());
 
-        for i in 0..self.len() {
-            v.push(self.data[i] + other.data[i]);
+        for (x1,x2) in self.data.iter().zip(other.data.iter()) {
+            v.push(x1 + x2);
         }
 
         Vector {
@@ -85,10 +85,10 @@ impl Vector {
 
     pub fn dot(&self, other: &Vector) -> i32 {
         assert_eq!(self.len(), other.len());
-    
         let mut sum = 0;
-        for i in 0..self.len() {
-            sum += self.data[i] * other.data[i];
+
+        for (x1,x2) in self.data.iter().zip(other.data.iter()) {
+            sum += x1*x2;
         }
     
         sum
@@ -97,8 +97,8 @@ impl Vector {
     pub fn norm2(&self) -> i32 {
         let mut sum = 0;
 
-        for i in 0..self.len() {
-            sum += self.data[i] * self.data[i];
+        for x in self.data.iter() {
+            sum += x*x;
         }
 
         sum
@@ -112,9 +112,9 @@ impl Vector {
     pub fn inf_norm(&self) -> i32 {
         let mut max = self.data[0];
 
-        for i in 1..self.len() {
-            if self.data[i] > max {
-                max = self.data[i];
+        for &x in self.data.iter().skip(1) {
+            if x > max {
+                max = x;
             }
         }
 
@@ -124,8 +124,8 @@ impl Vector {
     pub fn one_norm(&self) -> i32 {
         let mut sum = 0;
 
-        for i in 0..self.len() {
-            sum += self.data[i].abs();
+        for x in self.data.iter() {
+            sum += x.abs();
         }
 
         sum

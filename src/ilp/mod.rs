@@ -1,11 +1,14 @@
 use std::cmp::max;
+use std::slice::Iter;
 
 pub mod steinitz;
 mod graph;
 
+pub type IntData = i32;
+
 #[derive(Hash, PartialEq, Eq, Clone, Debug)]
 pub struct Vector {
-    data: Vec<i32>
+    data: Vec<IntData>
 }
 
 pub struct Matrix {
@@ -18,7 +21,8 @@ pub struct ILP {
     A: Matrix,
     b: Vector,
     c: Vector,
-    delta: i32
+    delta: IntData,
+    col_delta: IntData
 }
 
 pub enum ILPError {
@@ -32,7 +36,7 @@ impl ILP {
         assert!(c.len() == mat.size.1);
         assert!(mat.size.0 > 0 && mat.size.1 > 0);
     
-        let mut delta:i32 = b.inf_norm();
+        let mut delta = b.inf_norm();
     
         for v in mat.columns.iter() {
             delta = max(delta, v.inf_norm());
@@ -42,7 +46,8 @@ impl ILP {
             A: mat,
             b: b,
             c: c,
-            delta: delta
+            delta: delta,
+            col_delta: delta
         }
     }
 }
@@ -60,7 +65,7 @@ impl Vector {
         }
     }
 
-    pub fn from_slice(data:&[i32]) -> Self {
+    pub fn from_slice(data:&[IntData]) -> Self {
         Vector {
             data: data.iter().cloned().collect()
         }
@@ -70,11 +75,15 @@ impl Vector {
         self.data.len()
     }
 
+    pub fn iter(&self) -> Iter<IntData> {
+        self.data.iter()
+    }
+
     pub fn add(&self, other:&Vector) -> Vector {
         assert_eq!(self.len(), other.len());
         let mut v = Vec::with_capacity(self.len());
 
-        for (x1,x2) in self.data.iter().zip(other.data.iter()) {
+        for (x1,x2) in self.iter().zip(other.iter()) {
             v.push(x1 + x2);
         }
 
@@ -83,36 +92,36 @@ impl Vector {
         }
     }
 
-    pub fn dot(&self, other: &Vector) -> i32 {
+    pub fn dot(&self, other: &Vector) -> IntData {
         assert_eq!(self.len(), other.len());
         let mut sum = 0;
 
-        for (x1,x2) in self.data.iter().zip(other.data.iter()) {
+        for (x1,x2) in self.iter().zip(other.iter()) {
             sum += x1*x2;
         }
     
         sum
     }
 
-    pub fn norm2(&self) -> i32 {
+    pub fn norm2(&self) -> IntData {
         let mut sum = 0;
 
-        for x in self.data.iter() {
+        for x in self.iter() {
             sum += x*x;
         }
 
         sum
     }
 
-    pub fn norm(&self) -> f64 {
-        let x = self.norm2() as f64;
+    pub fn norm(&self) -> f32 {
+        let x = self.norm2() as f32;
         x.sqrt()
     }
 
-    pub fn inf_norm(&self) -> i32 {
+    pub fn inf_norm(&self) -> IntData {
         let mut max = self.data[0];
 
-        for &x in self.data.iter().skip(1) {
+        for &x in self.iter().skip(1) {
             if x > max {
                 max = x;
             }
@@ -121,10 +130,10 @@ impl Vector {
         max
     }
 
-    pub fn one_norm(&self) -> i32 {
+    pub fn one_norm(&self) -> IntData {
         let mut sum = 0;
 
-        for x in self.data.iter() {
+        for x in self.iter() {
             sum += x.abs();
         }
 
@@ -134,7 +143,7 @@ impl Vector {
     pub fn as_f32_vec(&self) -> Vec<f32> {
         let mut v = Vec::with_capacity(self.data.len());
 
-        for &x in self.data.iter() {
+        for &x in self.iter() {
             v.push(x as f32);
         }
 
@@ -143,7 +152,7 @@ impl Vector {
 }
 
 impl Matrix {
-    pub fn from_slice(rows:usize, columns:usize, data:&[i32]) -> Matrix {
+    pub fn from_slice(rows:usize, columns:usize, data:&[IntData]) -> Matrix {
         assert_eq!(data.len(), rows*columns);
         let mut cols = Vec::with_capacity(columns);
 

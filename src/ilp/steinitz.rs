@@ -31,11 +31,10 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     let start = Instant::now();
 
     // constants
-    let r = 1.0 / ilp.b.norm() as f32;
+    let r = 1.0 / ilp.b.norm();
     let (rows, columns) = ilp.A.size; // (m,n)
     let b_float = ilp.b.as_f32_vec();
-    // assume t>=2 thus 1+1/t<1.5, trivial solution (t=1) will always be included
-    let bound = 1.5 * (rows as i32 * ilp.delta) as f32;
+    let bound = find_optimal_bound(ilp);
     let ts_size_bound = ((2.0*bound) as i64 + 1).pow(rows as u32);
     println!(" -> Using {} as the bound for the tube set.", bound);
     println!(" -> Tube set size bound: {}", ts_size_bound);
@@ -69,13 +68,13 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
         for x in surface.drain(0..surface.len()) {
             let from_idx = graph.get_idx_by_vec(&x).unwrap();
 
-            for (v,i) in ilp.A.columns.iter().zip(0..columns) {
+            for (i, (v,&c)) in ilp.A.columns.iter().zip(ilp.c.iter()).enumerate() {
                 let xp = x.add(v);
                 let s = clamp(xp.dot(&ilp.b) as f32 * r, 0.0, 1.0);
 
                 // ||xp - d*b|| <= bound
                 if is_in_bounds(&xp, &b_float, s, bound) {
-                    let cost = ilp.c.data[i];
+                    let cost = c as Cost;
                     let to_distance = bf_data[from_idx].0 + cost;
 
                     let to_idx = match graph.get_idx_by_vec(&xp) {
@@ -186,12 +185,18 @@ fn clamp<T: Float>(x:T, min: T, max: T) -> T {
     T::min(T::max(min, x), max)
 }
 
+fn find_optimal_bound(ilp:&ILP) -> f32 {
+    let (rows, _) = ilp.A.size;
+    // assume t>=2 thus 1+1/t<1.5, trivial solution (t=1) will always be included
+    1.5 * (rows * ilp.delta as usize) as f32
+}
+
 /// ||x - s*b||_{inf} <= bound
 fn is_in_bounds(v:&Vector, b:&Vec<f32>, s:f32, bound:f32) -> bool {
     assert_eq!(v.len(), b.len());
     let mut max = 0.0;
 
-    for (&x,&b) in v.data.iter().zip(b.iter()) {
+    for (&x,&b) in v.iter().zip(b.iter()) {
         let d = (x as f32 - (s * b)).abs();
         
         if d > max {

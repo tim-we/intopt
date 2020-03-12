@@ -6,7 +6,7 @@ type Map<K,V> = hashbrown::HashMap<K,V>; //fnv::FnvHashMap<T>;
 
 pub type NodeIdx = usize;
 pub type Cost = i32;
-pub type ColumnIdx = u8;
+pub type ColumnIdx = i32;
 
 pub type Edge = (NodeIdx, NodeIdx, Cost, ColumnIdx);
 

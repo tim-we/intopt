@@ -94,11 +94,11 @@ impl Vector {
         sum
     }
 
-    pub fn norm2(&self) -> i64 {
-        let mut sum = 0i64;
+    pub fn norm2(&self) -> i32 {
+        let mut sum = 0;
 
         for i in 0..self.len() {
-            sum += self.data[i] as i64 * self.data[i] as i64;
+            sum += self.data[i] * self.data[i];
         }
 
         sum
@@ -119,6 +119,16 @@ impl Vector {
         }
 
         max
+    }
+
+    pub fn one_norm(&self) -> i32 {
+        let mut sum = 0;
+
+        for i in 0..self.len() {
+            sum += self.data[i].abs();
+        }
+
+        sum
     }
 
     pub fn as_f32_vec(&self) -> Vec<f32> {

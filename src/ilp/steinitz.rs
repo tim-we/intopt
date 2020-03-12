@@ -63,6 +63,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
         let max_new_nodes = surface.len() * columns;
         graph.reserve(max_new_nodes);
         bf_data.reserve(max_new_nodes);
+        new_surface.reserve(max_new_nodes);
 
         // grow graph
         depth = depth+1;

@@ -30,6 +30,11 @@ impl VectorDiGraph {
         }
     }
 
+    pub fn reserve(&mut self, additional: usize) {
+        self.nodes.reserve(additional);
+        self.map.reserve(additional);
+    }
+
     pub fn size(&self) -> usize {
         self.nodes.len()
     }

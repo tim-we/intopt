@@ -62,6 +62,10 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     // construct graph
     println!(" -> Constructing the graph...");
     while !surface.is_empty() {
+        // pre-allocate memory for new nodes
+        graph.reserve(surface.len() * columns);
+
+        // grow graph
         for x in surface.drain(0..surface.len()) {
             let from_idx = graph.get_idx_by_vec(&x).unwrap();
 

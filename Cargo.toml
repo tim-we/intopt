@@ -5,6 +5,5 @@ authors = ["Tim Weißenfels <tim.weissenfels@outlook.com>"]
 edition = "2018"
 
 [dependencies]
-fnv = "1.0.6"
 num-traits = "0.2"
 hashbrown = "0.7.0"

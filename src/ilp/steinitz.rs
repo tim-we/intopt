@@ -187,11 +187,12 @@ fn clamp<T: Float>(x:T, min: T, max: T) -> T {
 }
 
 /// ||x - s*b||_{inf} <= bound
-fn is_in_bounds(x:&Vector, b:&Vec<f32>, s:f32, bound:f32) -> bool {
+fn is_in_bounds(v:&Vector, b:&Vec<f32>, s:f32, bound:f32) -> bool {
+    assert_eq!(v.len(), b.len());
     let mut max = 0.0;
 
-    for i in 0..x.len() {
-        let d = (x.data[i] as f32 - (s * b[i])).abs();
+    for (&x,&b) in v.data.iter().zip(b.iter()) {
+        let d = (x as f32 - (s * b)).abs();
         
         if d > max {
             max = d;

@@ -36,6 +36,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     let r = 1.0 / ilp.b.norm() as f32;
     let (rows, columns) = ilp.A.size; // (m,n)
     let b_float = ilp.b.as_f32_vec();
+    // assume t>=2 thus 1+1/t<1.5, trivial solution (t=1) will always be included
     let bound = 1.5 * (rows as i32 * ilp.delta) as f32;
     let ts_size_bound = ((2.0*bound) as i32 + 1).pow(rows as u32);
     println!(" -> Using {} as the bound for the tube set.", bound);

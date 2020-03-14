@@ -183,11 +183,20 @@ impl Matrix {
         false
     }
 
-    pub fn herdisc(&self) -> f32 {
+    pub fn herdisc_upper_bound(&self) -> f32 {
+        let (m,_) = self.size;
         let t = self.columns.iter().map(|col| col.one_norm()).max().unwrap();
 
+        let h = if m <= 699452 {
+            2.0*f64::ln(2.0*m as f64)
+        } else {
+            5.32
+        } as f32;
+
+        let delta = self.max_abs_entry() as f32;
+
         f32::min(
-            (6*self.max_abs_entry()) as f32 * (self.size.0 as f32).sqrt(), //THM 5
+            0.5 * h * f32::sqrt(m as f32) * delta,
             t as f32 // THM 7
         )
     }

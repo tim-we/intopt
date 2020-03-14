@@ -1,6 +1,7 @@
 use std::slice::Iter;
 
 pub mod steinitz;
+pub mod discrepancy;
 mod graph;
 
 pub type IntData = i32;
@@ -26,7 +27,8 @@ pub struct ILP {
 
 pub enum ILPError {
     NoSolution,
-    Unbounded
+    Unbounded,
+    UnsupportedMatrix
 }
 
 impl ILP {
@@ -35,7 +37,7 @@ impl ILP {
         assert!(c.len() == mat.size.1);
         assert!(mat.size.0 > 0 && mat.size.1 > 0);
 
-        let da = mat.columns.iter().map(|col| col.inf_norm()).max().unwrap();
+        let da = mat.max_abs_entry();
         let db = b.inf_norm();
     
         ILP {
@@ -163,5 +165,30 @@ impl Matrix {
             columns: cols,
             size: (rows, columns)
         }
+    }
+
+    pub fn max_abs_entry(&self) -> IntData {
+        self.columns.iter().map(|col| col.inf_norm()).max().unwrap()
+    }
+
+    pub fn has_duplicate_columns(&self) -> bool {
+        for (i,v) in self.columns.iter().enumerate() {
+            for c in self.columns.iter().skip(i+1) {
+                if v==c {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+
+    pub fn herdisc(&self) -> f32 {
+        let t = self.columns.iter().map(|col| col.one_norm()).max().unwrap();
+
+        f32::min(
+            (6*self.max_abs_entry()) as f32 * (self.size.0 as f32).sqrt(), //THM 5
+            t as f32 // THM 7
+        )
     }
 }

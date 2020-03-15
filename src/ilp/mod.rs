@@ -5,6 +5,7 @@ pub mod discrepancy;
 mod graph;
 
 pub type IntData = i32;
+pub type Cost = i32;
 
 #[derive(Hash, PartialEq, Eq, Clone, Debug)]
 pub struct Vector {
@@ -60,6 +61,14 @@ impl Vector {
     pub fn zero(size:usize) -> Self {
         Vector {
             data: vec![0; size]
+        }
+    }
+
+    pub fn unit(size:usize, dim:usize) -> Self {
+        let mut data = vec![0; size];
+        data[dim] = 1 as IntData;
+        Vector {
+            data: data
         }
     }
 
@@ -167,13 +176,21 @@ impl Matrix {
         }
     }
 
+    pub fn num_cols(&self) -> usize {
+        self.columns.len()
+    }
+
+    pub fn iter(&self) -> Iter<Vector> {
+        self.columns.iter()
+    }
+
     pub fn max_abs_entry(&self) -> IntData {
-        self.columns.iter().map(|col| col.inf_norm()).max().unwrap()
+        self.iter().map(|col| col.inf_norm()).max().unwrap()
     }
 
     pub fn has_duplicate_columns(&self) -> bool {
-        for (i,v) in self.columns.iter().enumerate() {
-            for c in self.columns.iter().skip(i+1) {
+        for (i,v) in self.iter().enumerate() {
+            for c in self.iter().skip(i+1) {
                 if v==c {
                     return true;
                 }
@@ -183,9 +200,23 @@ impl Matrix {
         false
     }
 
+    pub fn has_zero_columns(&self) -> bool {
+        'column: for v in self.iter() {
+            for &x in v.iter() {
+                if x!=0 {
+                    continue 'column;
+                }
+            }
+
+            return true;
+        }
+
+        false
+    }
+
     pub fn herdisc_upper_bound(&self) -> f32 {
         let (m,_) = self.size;
-        let t = self.columns.iter().map(|col| col.one_norm()).max().unwrap();
+        let t = self.iter().map(|col| col.one_norm()).max().unwrap();
 
         let h = if m <= 699452 {
             2.0*f64::ln(2.0*m as f64)

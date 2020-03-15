@@ -1,5 +1,5 @@
 use num_traits::Float;
-use super::{ILP, Vector, ILPError};
+use super::{ILP, Vector, ILPError, Cost};
 use std::time::Instant;
 use super::graph::*;
 
@@ -29,6 +29,11 @@ use super::graph::*;
 pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     println!("Solving ILP with the Steinitz Algorithm...");
     let start = Instant::now();
+
+    if ilp.A.has_zero_columns() {
+        println!(" -> Matrix contains zero columns!");
+        return Err(ILPError::UnsupportedMatrix);
+    }
 
     // constants
     let r = 1.0 / ilp.b.norm();
@@ -71,7 +76,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
         for x in surface.drain(0..surface.len()) {
             let from_idx = graph.get_idx_by_vec(&x).unwrap();
 
-            for (i, (v,&c)) in ilp.A.columns.iter().zip(ilp.c.iter()).enumerate() {
+            for (i, (v,&c)) in ilp.A.iter().zip(ilp.c.iter()).enumerate() {
                 let xp = x.add(v);
                 let s = clamp(xp.dot(&ilp.b) as f32 * r, 0.0, 1.0);
 
@@ -128,8 +133,8 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
 
     println!(" -> Continue Bellman-Ford Algorithm to find longest path...");
     let mut iterations = 0;
-    // scan up to |V| - 1 times
-    for _ in 1..graph.size() {
+    // scan up to |V| - 2 times
+    for _ in 2..graph.size() {
         let mut changed = false;
         iterations += 1;
 

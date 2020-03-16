@@ -73,11 +73,12 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
         }
 
         if i%50 == 0 {
-            println!(" -> Iteration {}, size: {}, t: {:?}", i, solutions.len(), start.elapsed());
+            println!("    > Iteration {}, size: {}, t: {:?}", i, solutions.len(), start.elapsed());
         }
     }
 
-    println!(" -> {} iterations completed. t: {:?}", K, start.elapsed());
+    println!(" -> {} iterations completed.", K);
+    println!(" -> Time elapsed: {:?}", start.elapsed());
 
     match solutions.get(&ilp.b) {
         Some((x,_)) => Ok(x.clone()),

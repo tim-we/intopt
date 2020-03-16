@@ -27,11 +27,15 @@ fn main() {
     let c = Vector::from_slice(&[1, 2, 3]);
 
     let ilp = ILP::new(mat, b, c);
+    ilp.print_details();
+
     let res = match matches.value_of("algorithm") {
-        Some("steinitz") => steinitz::solve(&ilp),
+        Some("steinitz")    => steinitz::solve(&ilp),
         Some("discrepancy") => discrepancy::solve(&ilp),
         _ => panic!()
     };
+
+    println!();
 
     match res {
         Ok(x) => println!("Found a solution! x={:?}", x),

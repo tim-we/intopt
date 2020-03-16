@@ -156,6 +156,18 @@ impl Vector {
 
         v
     }
+
+    pub fn max_distance(&self, v:&Vector, bound:IntData) -> bool {
+        assert!(self.len() == v.len());
+
+        for (&a,&b) in self.iter().zip(v.iter()) {
+            if IntData::abs(a-b) > bound {
+                return false;
+            }
+        }
+
+        true
+    }
 }
 
 impl Matrix {

@@ -1,3 +1,4 @@
+use std::fmt;
 use std::slice::Iter;
 
 pub mod steinitz;
@@ -7,7 +8,7 @@ mod graph;
 pub type IntData = i32;
 pub type Cost = i32;
 
-#[derive(Hash, PartialEq, Eq, Clone, Debug)]
+#[derive(Hash, PartialEq, Eq, Clone)]
 pub struct Vector {
     data: Vec<IntData>
 }
@@ -167,6 +168,12 @@ impl Vector {
         }
 
         true
+    }
+}
+
+impl fmt::Debug for Vector {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{:?}", self.data)
     }
 }
 

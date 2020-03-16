@@ -12,7 +12,7 @@ type LookupTable = Map<Vector, (Vector, i32)>;
 
 pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     println!("Solving ILP with the Discrepancy Algorithm...");
-    let _start = Instant::now();
+    let start = Instant::now();
 
     if ilp.A.has_duplicate_columns() {
         println!(" -> The matrix has duplicate columns!");
@@ -27,7 +27,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     let K = compute_K(ilp);
     let b_bound = 4*H;
 
-    println!(" -> herdisc(A) <= {} = H", H);
+    println!(" -> H = {} >= herdisc(A)", H);
     println!(" -> Iterations: K = {}", K);
 
     let mut solutions     = LookupTable::with_capacity(ilp.A.num_cols());
@@ -72,10 +72,12 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
             solutions.insert(b,x);
         }
 
-        if i%20 == 0 {
-            println!(" -> Iteration {}, size: {}", i, solutions.len());
+        if i%50 == 0 {
+            println!(" -> Iteration {}, size: {}, t: {:?}", i, solutions.len(), start.elapsed());
         }
     }
+
+    println!(" -> {} iterations completed. t: {:?}", K, start.elapsed());
 
     match solutions.get(&ilp.b) {
         Some((x,_)) => Ok(x.clone()),

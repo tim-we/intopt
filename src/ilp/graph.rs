@@ -17,7 +17,8 @@ pub struct Node {
 pub struct VectorDiGraph {
     nodes: Vec<Node>,
     map: Map<Vector, NodeIdx>,
-    edges_per_node: usize
+    edges_per_node: usize,
+    edges: usize
 }
 
 impl VectorDiGraph {
@@ -25,7 +26,8 @@ impl VectorDiGraph {
         VectorDiGraph {
             nodes: Vec::with_capacity(node_capacity),
             map: Map::with_capacity(node_capacity),
-            edges_per_node: edges
+            edges_per_node: edges,
+            edges: 0
         }
     }
 
@@ -64,6 +66,7 @@ impl VectorDiGraph {
     pub fn add_edge(&mut self, from: NodeIdx, to: NodeIdx, cost: Cost, idx: ColumnIdx) {
         let edge = (from, to, cost, idx);
         self.nodes[from].edges.push(edge);
+        self.edges += 1;
     }
 
     pub fn iter_nodes(&self) -> Range<usize> {
@@ -72,5 +75,9 @@ impl VectorDiGraph {
 
     pub fn iter_edges(&self, from_idx:usize) -> Iter<Edge> {
         self.nodes[from_idx].edges.iter()
+    }
+
+    pub fn num_edges(&self) -> usize {
+        self.edges
     }
 }

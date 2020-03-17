@@ -123,7 +123,8 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     }
 
     println!(" -> Graph constructed! t={:?}", start.elapsed());
-    println!("    size: {}, depth: {}, max. surface size: {}", graph.size(), depth, max_surface_size);
+    println!("    #vertices: {}, #edges: {}", graph.size(), graph.num_edges());
+    println!("    depth: {}, max. surface size: {}", depth, max_surface_size);
     println!("    radius: start={} end={}", compute_bound(ilp, 1), compute_bound(ilp, depth));
 
     let b_idx = match graph.get_idx_by_vec(&ilp.b) {
@@ -156,7 +157,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
 
     println!(" -> {} Bellman-Ford iterations, t={:?}", iterations, start.elapsed());
 
-    println!(" -> Longest path distance: {:?}", bf_data[b_idx].0);
+    println!(" -> Longest path cost: {:?}", bf_data[b_idx].0);
 
     // create solution vector
     println!(" -> Creating solution vector... t={:?}", start.elapsed());

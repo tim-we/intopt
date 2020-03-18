@@ -1,3 +1,7 @@
+extern crate pest;
+#[macro_use]
+extern crate pest_derive;
+
 pub mod ilp;
 use ilp::*;
 use clap::{App, Arg};
@@ -17,16 +21,15 @@ fn main() {
                 .help("Sets the algorithm to solve the ILP.")
                 .takes_value(true),
         )
+        .arg(
+            Arg::with_name("input")
+                .takes_value(true)
+                .value_name("FILE")
+                .help(".ilp input file")
+        )
         .get_matches();
 
-    /*let mat = Matrix::from_slice(6, 6, &[2,0,0,0,0,0, 0,3,0,0,0,0, 0,0,1,0,0,0, 0,0,0,1,0,0, 0,0,0,1,1,0, 1,0,0,0,0,1]);
-    let b = Vector::from_slice(&[3, 0, 0, 1, 1, 1]);
-    let c = Vector::from_slice(&[1, 2, 3, 4, 3, 2]);*/
-    let mat = Matrix::from_slice(3, 3, &[1,0,0,0,2,0,0,0,1]);
-    let b = Vector::from_slice(&[5, 6, 5]);
-    let c = Vector::from_slice(&[1, 2, 3]);
-
-    let ilp = ILP::new(mat, b, c);
+    let ilp = parser::parse_file(matches.value_of("input").unwrap()).unwrap();
     ilp.print_details();
 
     let res = match matches.value_of("algorithm") {

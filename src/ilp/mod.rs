@@ -1,6 +1,7 @@
 use std::fmt;
 use std::slice::Iter;
 
+pub mod parser;
 pub mod steinitz;
 pub mod discrepancy;
 mod graph;
@@ -56,7 +57,9 @@ impl ILP {
         println!(" -> constraints: {}", self.A.size.0);
         println!(" -> variables: {}", self.A.size.1);
         println!(" -> \u{0394} = {}", self.delta_A);
-        println!(" -> \u{2016}b\u{2016}\u{221E} = {}\n", self.delta_b);
+        println!(" -> \u{2016}b\u{2016}\u{221E} = {}", self.delta_b);
+        println!(" -> b = {:?}", self.b);
+        println!(" -> c = {:?}\n", self.c);
     }
 }
 
@@ -186,6 +189,19 @@ impl fmt::Debug for Vector {
 }
 
 impl Matrix {
+    pub fn zero(m:usize, n:usize) -> Self {
+        let mut columns = Vec::with_capacity(n);
+
+        for _ in 0..n {
+            columns.push(Vector::zero(m));
+        }
+
+        Matrix {
+            columns: columns,
+            size: (m, n)
+        }
+    }
+
     pub fn from_slice(rows:usize, columns:usize, data:&[IntData]) -> Matrix {
         assert_eq!(data.len(), rows*columns);
         let mut cols = Vec::with_capacity(columns);
@@ -257,5 +273,9 @@ impl Matrix {
             0.5 * h * f32::sqrt(m as f32) * delta,
             t as f32 // THM 7
         )
+    }
+
+    pub fn add_to_entry(&mut self, i:usize, j:usize, val:IntData) {
+        self.columns[j].data[i] += val;
     }
 }

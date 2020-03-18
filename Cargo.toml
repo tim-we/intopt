@@ -1,10 +1,12 @@
 [package]
 name = "intopt"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Tim Weißenfels <tim.weissenfels@outlook.com>"]
 edition = "2018"
 
 [dependencies]
 num-traits = "0.2"
-hashbrown = "0.7.0"
-clap = "2.33.0"
+hashbrown = "0.7"
+clap = "2.33"
+pest = "2.1"
+pest_derive = "2.1"

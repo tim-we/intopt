@@ -26,6 +26,7 @@ fn main() {
                 .takes_value(true)
                 .value_name("FILE")
                 .help(".ilp input file")
+                .required(true)
         )
         .get_matches();
 

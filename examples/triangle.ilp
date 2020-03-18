@@ -1,0 +1,10 @@
+minimize:
+    x + y
+subject to:
+    2*y + s1 =    x + 4
+      y      = -1*x + 2 + s2
+      x + s3 =        4
+notes:
+x and y have to be within the triangle
+(0,2), (4, 4), (4, -2)
+s1,s2,s3 are slack variables

@@ -28,11 +28,13 @@ pub fn parse_file(file:&str) -> Result<ILP, ()> {
                 .next().unwrap();
     
     let mut variables = Map::<String, usize>::new();
+    let maximize;
     let objective;
     let constraints;
 
     {
         let mut iterator = file.into_inner();
+        maximize = iterator.next().unwrap().as_str().to_lowercase() == "maximize";
         objective = iterator.next().unwrap();
         constraints = iterator.next().unwrap();
     }
@@ -41,12 +43,16 @@ pub fn parse_file(file:&str) -> Result<ILP, ()> {
     {
         let vars1 = find_variables(&objective);
         let vars2 = find_variables(&constraints);
+        let mut list = Vec::new();
         
         for var in vars1.iter().chain(vars2.iter()) {
             if !variables.contains_key(var) {
+                list.push(var);
                 variables.insert(var.clone(), variables.len());
             }
         }
+
+        println!("Variables: {:?}", list);
     }
 
     let equations = get_equations(constraints);
@@ -59,8 +65,12 @@ pub fn parse_file(file:&str) -> Result<ILP, ()> {
     // objective -> c Vector
     for m in multiple_sum(objective).1 {
         let i = *variables.get(&m.1).unwrap();
-        assert!(i < n);
-        c.data[i] += m.0;
+        if maximize {
+            c.data[i] += m.0;
+        } else {
+            c.data[i] -= m.0;
+        }
+        
     }
 
     // constraints -> A matrix
@@ -68,12 +78,10 @@ pub fn parse_file(file:&str) -> Result<ILP, ()> {
         b.data[row] = eq.right.0 - eq.left.0;
         for m in eq.left.1.iter() {
             let j = *variables.get(&m.1).unwrap();
-            assert!(j < n);
             a.add_to_entry(row, j, m.0);
         }
         for m in eq.right.1.iter() {
             let j = *variables.get(&m.1).unwrap();
-            assert!(j < n);
             a.add_to_entry(row, j, -m.0);
         }
     }
@@ -107,19 +115,21 @@ fn find_variables(tree: &Pair<Rule>) -> Vec<String> {
 fn multiple_sum(pair: Pair<Rule>) -> Sum {
     assert_eq!(pair.as_rule(), Rule::sum);
 
-    fn build_sum(mut sum:Sum, pair: Pair<Rule>) -> Sum {
+    fn build_sum(sum:&mut Sum, pair: Pair<Rule>) {
         for p in pair.into_inner() {
             match p.as_rule() {
                 Rule::integer  => sum.0 += p.as_str().parse::<i32>().unwrap(),
                 Rule::multiple => sum.1.push(multiple(p)),
-                _              => sum = build_sum(sum, p)
+                Rule::term     => build_sum(sum, p),
+                Rule::sum      => build_sum(sum, p),
+                _              => unreachable!()
             }
         }
-
-        sum
     }
 
-    build_sum(Sum(0, Vec::new()), pair)
+    let mut sum = Sum(0, Vec::new());
+    build_sum(&mut sum, pair);
+    sum
 }
 
 fn multiple(pair: Pair<Rule>) -> Multiple {

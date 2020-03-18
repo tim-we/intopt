@@ -55,7 +55,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
         surface.push(zero);
     }
 
-    // bellman-ford data (distance, predecessor, matrix column index)
+    // bellman-ford data (distance, predecessor, matrix column [index] that was used to get to this node)
     let mut bf_data = Vec::<(Cost, NodeIdx, ColumnIdx)>::with_capacity(16384);
     bf_data.push((0,0,0));
 
@@ -93,6 +93,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
                             if to_distance > bf_data[to_idx].0 {
                                 bf_data[to_idx].0 = to_distance;
                                 bf_data[to_idx].1 = from_idx;
+                                bf_data[to_idx].2 = i as ColumnIdx;
                             }
 
                             to_idx
@@ -140,11 +141,13 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
         iterations += 1;
 
         for node_idx in graph.iter_nodes() {
-            for &(from, to, cost, _) in graph.iter_edges(node_idx) {
+            for &(from, to, cost, i) in graph.iter_edges(node_idx) {
                 let to_distance = bf_data[from].0 + cost;
                 if to_distance > bf_data[to].0 {
                     bf_data[to].0 = to_distance;
                     bf_data[to].1 = from;
+                    bf_data[to].2 = i;
+
                     changed = true;
                 }
             }
@@ -156,8 +159,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     }
 
     println!(" -> {} Bellman-Ford iterations, t={:?}", iterations, start.elapsed());
-
-    println!(" -> Longest path cost: {:?}", bf_data[b_idx].0);
+    println!(" -> Longest path cost: {}", bf_data[b_idx].0);
 
     // create solution vector
     println!(" -> Creating solution vector... t={:?}", start.elapsed());

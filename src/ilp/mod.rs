@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::fmt;
 use std::slice::Iter;
 
@@ -59,7 +60,8 @@ impl ILP {
         println!(" -> \u{0394} = {}", self.delta_A);
         println!(" -> \u{2016}b\u{2016}\u{221E} = {}", self.delta_b);
         println!(" -> b = {:?}", self.b);
-        println!(" -> c = {:?}\n", self.c);
+        println!(" -> c = {:?}", self.c);
+        println!(" -> Matrix A:\n{}\n", self.A);
     }
 }
 
@@ -277,5 +279,22 @@ impl Matrix {
 
     pub fn add_to_entry(&mut self, i:usize, j:usize, val:IntData) {
         self.columns[j].data[i] += val;
+    }
+}
+
+impl Display for Matrix { 
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        let mut str = "".to_string();
+        let (m,n) = self.size;
+
+        for i in 0..m {
+            str.push_str("|");
+            for j in 0..n {
+                str.push_str(&format!(" {:3} ", self.columns[j].data[i]));
+            }
+            str.push_str("|\n");
+        }
+
+        write!(f, "{}", str)
     }
 }

@@ -1,7 +1,7 @@
 [package]
 name = "intopt"
-version = "0.4.1"
-authors = ["Tim Weißenfels <tim.weissenfels@outlook.com>"]
+version = "0.5.0"
+authors = ["Tim Weißenfels <tim.weissenfels@stu.uni-kiel.de>"]
 edition = "2018"
 
 [dependencies]

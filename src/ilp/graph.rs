@@ -5,7 +5,7 @@ use std::slice::Iter;
 type Map<K,V> = hashbrown::HashMap<K,V>; //fnv::FnvHashMap<T>;
 
 pub type NodeIdx = usize;
-pub type ColumnIdx = i32;
+pub type ColumnIdx = usize;
 
 pub type Edge = (NodeIdx, NodeIdx, Cost, ColumnIdx);
 

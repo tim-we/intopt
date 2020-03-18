@@ -4,3 +4,5 @@ subject to:
       x1 = 5
     2*x2 = 6
       x3 = 5
+notes:
+  solution: [5,3,5]

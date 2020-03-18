@@ -1,15 +1,18 @@
 WHITESPACE  = _{ " " }
 integer     = @{ "-"? ~ ASCII_DIGIT+ }
-variable    = { ASCII_ALPHA ~ ASCII_ALPHANUMERIC* }
+variable    = @{ ASCII_ALPHA ~ ASCII_ALPHANUMERIC* }
 multiple    = { (integer ~ "*")? ~ variable }
 term        = { multiple | integer }
 sum         = { (term ~ "+" ~ sum) | term }
 equation    = { sum ~ "=" ~ sum }
 constraints = { (equation ~ NEWLINE ~ constraints) | equation }
+mode        = { ^"maximize" | ^"minimize" }
+notes       = { ^"notes:" ~ ANY* }
 ilp         = {    
-    SOI ~ ^"maximize:" ~ NEWLINE 
-    ~ sum ~ NEWLINE
+    SOI ~ mode ~ ":" ~ NEWLINE 
+    ~ sum ~ NEWLINE+
     ~ ^"subject to:" ~ NEWLINE
-    ~ constraints ~ NEWLINE*
+    ~ constraints ~ NEWLINE+
+    ~ notes?
     ~ EOI
 }

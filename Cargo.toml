@@ -2,6 +2,7 @@
 name = "intopt"
 version = "0.5.0"
 authors = ["Tim Weißenfels <tim.weissenfels@stu.uni-kiel.de>"]
+repository = "https://github.com/tim-we/intopt"
 edition = "2018"
 
 [dependencies]

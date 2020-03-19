@@ -12,9 +12,9 @@ pub struct ILPFileParser;
 
 struct Multiple(i32,String);
 struct Sum(i32,Vec<Multiple>);
-struct Equation {
-    left:  Sum,
-    right: Sum
+enum Constraint {
+    Equation   { left: Sum, right: Sum },
+    Inequality { left: Sum, right: Sum, leq:bool }
 }
 
 pub fn parse_file(file:&str) -> Result<ILP, ()> {
@@ -29,20 +29,20 @@ pub fn parse_file(file:&str) -> Result<ILP, ()> {
     
     let mut variables = Map::<String, usize>::new();
     let maximize;
-    let objective;
-    let constraints;
+    let objective_tree;
+    let constraints_tree;
 
     {
         let mut iterator = file.into_inner();
         maximize = iterator.next().unwrap().as_str().to_lowercase() == "maximize";
-        objective = iterator.next().unwrap();
-        constraints = iterator.next().unwrap();
+        objective_tree = iterator.next().unwrap();
+        constraints_tree = iterator.next().unwrap();
     }
 
     // find variables
     {
-        let vars1 = find_variables(&objective);
-        let vars2 = find_variables(&constraints);
+        let vars1 = find_variables(&objective_tree);
+        let vars2 = find_variables(&constraints_tree);
         let mut list = Vec::new();
         
         for var in vars1.iter().chain(vars2.iter()) {
@@ -55,15 +55,16 @@ pub fn parse_file(file:&str) -> Result<ILP, ()> {
         println!("Variables: {:?}", list);
     }
 
-    let equations = get_equations(constraints);
-    let m = equations.len();
-    let n = variables.len();
+    let constraints = get_constraints(constraints_tree);
+    let inequalities = constraints.iter().filter(|c| matches!(c, Constraint::Inequality{..})).count();
+    let m = constraints.len();
+    let n = variables.len() + inequalities; // a slack var for every inequality
     let mut a = Matrix::zero(m, n);
     let mut b = Vector::zero(m);
     let mut c = Vector::zero(n);
 
     // objective -> c Vector
-    for m in multiple_sum(objective).1 {
+    for m in multiple_sum(objective_tree).1 {
         let i = *variables.get(&m.1).unwrap();
         if maximize {
             c.data[i] += m.0;
@@ -74,19 +75,34 @@ pub fn parse_file(file:&str) -> Result<ILP, ()> {
     }
 
     // constraints -> A matrix
-    for (row, eq) in equations.iter().enumerate() {
-        b.data[row] = eq.right.0 - eq.left.0;
-        for m in eq.left.1.iter() {
+    let mut slack = 0;
+    for (row, c) in constraints.iter().enumerate() {
+        let (left, right) = match c {
+            Constraint::Equation{ left, right } => (left, right),
+            Constraint::Inequality{ left, right, leq } => {
+                let j = variables.len() + slack;
+                slack += 1;
+                a.add_to_entry(row, j, if *leq {1} else {-1});
+                (left,  right)
+            }
+        };
+
+        b.data[row] = right.0 - left.0;
+        for m in left.1.iter() {
             let j = *variables.get(&m.1).unwrap();
             a.add_to_entry(row, j, m.0);
         }
-        for m in eq.right.1.iter() {
+        for m in right.1.iter() {
             let j = *variables.get(&m.1).unwrap();
             a.add_to_entry(row, j, -m.0);
         }
     }
 
-    println!("Parsing successful.\n");
+    if slack > 0 {
+        println!("Introduced {} slack variables.", slack);
+    }
+
+    println!();
 
     Ok(ILP::new(a,b,c))
 }
@@ -149,26 +165,29 @@ fn multiple(pair: Pair<Rule>) -> Multiple {
     Multiple(multiple, var_name)
 }
 
-fn equation(pair: Pair<Rule>) -> Equation {
-    assert_eq!(pair.as_rule(), Rule::equation);
-
+fn constraint(pair: Pair<Rule>) -> Constraint {
+    let rule = pair.as_rule();
     let mut iter = pair.into_inner();
-    let left = iter.next().unwrap();
-    let right = iter.next().unwrap();
+    let left  = multiple_sum(iter.next().unwrap());
+    let right = multiple_sum(iter.next().unwrap());
 
-    Equation {
-        left: multiple_sum(left),
-        right: multiple_sum(right)
+    match rule {
+        Rule::equation => Constraint::Equation { left: left, right: right },
+        Rule::leq      => Constraint::Inequality { left: left, right: right, leq: true },
+        Rule::geq      => Constraint::Inequality { left: left, right: right, leq: false },
+        _              => unreachable!()
     }
 }
 
-fn get_equations(pair: Pair<Rule>) -> Vec<Equation> {
+fn get_constraints(pair: Pair<Rule>) -> Vec<Constraint> {
     assert_eq!(pair.as_rule(), Rule::constraints);
 
-    fn f(v:&mut Vec<Equation>, pair:Pair<Rule>) {
+    fn f(v:&mut Vec<Constraint>, pair:Pair<Rule>) {
         for p in pair.into_inner() {
             match p.as_rule() {
-                Rule::equation    => v.push(equation(p)),
+                Rule::equation    => v.push(constraint(p)),
+                Rule::leq         => v.push(constraint(p)),
+                Rule::geq         => v.push(constraint(p)),
                 Rule::constraints => f(v, p),
                 _                 => unreachable!()
             }

@@ -56,8 +56,8 @@ impl ILP {
     pub fn print_details(&self) {
         println!("ILP details:");
         println!(" -> constraints: {}", self.A.size.0);
-        println!(" -> variables: {}", self.A.size.1);
-        println!(" -> \u{0394} = {}", self.delta_A);
+        println!(" -> variables: {:3}", self.A.size.1);
+        println!(" -> \u{0394}    = {}", self.delta_A);
         println!(" -> \u{2016}b\u{2016}\u{221E} = {}", self.delta_b);
         println!(" -> b = {:?}", self.b);
         println!(" -> c = {:?}", self.c);

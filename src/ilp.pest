@@ -5,10 +5,12 @@ multiple    = { (integer ~ "*")? ~ variable }
 term        = { multiple | integer }
 sum         = { (term ~ "+" ~ sum) | term }
 equation    = { sum ~ "=" ~ sum }
-constraints = { (equation ~ NEWLINE ~ constraints) | equation }
+leq         = { sum ~ "<=" ~ sum }
+geq         = { sum ~ ">=" ~ sum}
+constraints = { ((equation|leq|geq) ~ NEWLINE ~ constraints) | (equation|leq|geq) }
 mode        = { ^"maximize" | ^"minimize" }
 notes       = { ^"notes:" ~ ANY* }
-ilp         = {    
+ilp         = {
     SOI ~ mode ~ ":" ~ NEWLINE 
     ~ sum ~ NEWLINE+
     ~ ^"subject to:" ~ NEWLINE

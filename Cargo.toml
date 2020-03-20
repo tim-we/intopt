@@ -1,6 +1,6 @@
 [package]
 name = "intopt"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["Tim Weißenfels <tim.weissenfels@stu.uni-kiel.de>"]
 description = "A solver for integer linear programs (ILPs)."
 repository = "https://github.com/tim-we/intopt"

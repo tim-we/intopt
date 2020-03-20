@@ -59,9 +59,9 @@ impl ILP {
         println!(" -> variables: {:3}", self.A.size.1);
         println!(" -> \u{0394}    = {}", self.delta_A);
         println!(" -> \u{2016}b\u{2016}\u{221E} = {}", self.delta_b);
+        println!(" -> Matrix A:\n{}", self.A);
         println!(" -> b = {:?}", self.b);
-        println!(" -> c = {:?}", self.c);
-        println!(" -> Matrix A:\n{}\n", self.A);
+        println!(" -> c = {:?}\n", self.c);
     }
 }
 

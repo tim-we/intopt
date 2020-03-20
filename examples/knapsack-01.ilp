@@ -1,0 +1,23 @@
+maximize:
+    13*x1 + 42*x2 + 10*x3 + 5*x4
+subject to:
+    2*x1 + 4*x2 + 3*x3 + x4 <= 8
+    x1 <= 1
+    x2 <= 1
+    x3 <= 1
+    x4 <= 1
+notes:
+
+The classical 0,1 knapsack problem.
+
+Knapsack size: B=8
+Items:
+# | profit | weight
+===================
+1 |     13 |      2
+2 |     42 |      4
+3 |     10 |      3
+4 |      5 |      1
+
+Variable xi={0,1} indicates whether item i is in the knapsack.
+Solution: x=[1, 1, 0, 1, ...]

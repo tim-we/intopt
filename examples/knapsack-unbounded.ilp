@@ -1,0 +1,22 @@
+maximize:
+    13*x1 + 42*x2 + 10*x3 + 5*x4 + 6*x5 + 23*x6 + 2*x7
+subject to:
+    2*x1 + 7*x2 + 3*x3 + x4 + 2*x5 + 4*x6 + 2*x7 <= 11
+notes:
+
+The unbounded knapsack problem.
+
+Knapsack size: B=9
+Items:
+# | profit | weight
+===================
+1 |     13 |      2
+2 |     42 |      7
+3 |     10 |      3
+4 |      5 |      1
+5 |      6 |      2
+6 |     23 |      4
+7 |      2 |      2
+
+Variable xi describes the number of instances of item i in the knapsack.
+Solution: x=[5, 0, 0, 1, 0, 0, 0, ...]

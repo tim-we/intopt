@@ -6,7 +6,7 @@ notes:
 
 The unbounded knapsack problem.
 
-Knapsack size: B=9
+Knapsack size: B=11
 Items:
 # | profit | weight
 ===================

@@ -105,7 +105,7 @@ impl Vector {
     }
 
     pub fn add(&self, other:&Vector) -> Vector {
-        assert_eq!(self.len(), other.len());
+        debug_assert!(self.len() == other.len());
         let mut v = Vec::with_capacity(self.len());
 
         for (x1,x2) in self.iter().zip(other.iter()) {
@@ -118,7 +118,7 @@ impl Vector {
     }
 
     pub fn dot(&self, other: &Vector) -> IntData {
-        assert_eq!(self.len(), other.len());
+        debug_assert!(self.len() == other.len());
         let mut sum = 0;
 
         for (x1,x2) in self.iter().zip(other.iter()) {
@@ -176,7 +176,7 @@ impl Vector {
     }
 
     pub fn max_distance(&self, v:&Vector, bound:IntData) -> bool {
-        assert!(self.len() == v.len());
+        debug_assert!(self.len() == v.len());
 
         for (&a,&b) in self.iter().zip(v.iter()) {
             if IntData::abs(a-b) > bound {

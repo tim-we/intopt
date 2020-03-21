@@ -192,7 +192,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
 }
 
 fn clamp<T: Float>(x:T, min: T, max: T) -> T {
-    assert!(min <= max);
+    debug_assert!(min <= max);
 
     T::min(T::max(min, x), max)
 }
@@ -210,7 +210,7 @@ fn compute_bound(ilp:&ILP, depth:i32) -> f32 {
 
 /// ||x - s*b||_{inf} <= bound
 fn is_in_bounds(v:&Vector, b:&Vec<f32>, s:f32, bound:f32) -> bool {
-    assert_eq!(v.len(), b.len());
+    debug_assert!(v.len() == b.len());
 
     for (&x,&b) in v.iter().zip(b.iter()) {
         let d = (x as f32 - (s * b)).abs();

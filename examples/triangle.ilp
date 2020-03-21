@@ -1,5 +1,5 @@
 minimize:
-    x + y
+    x
 subject to:
     2*y <=    x + 4
       y >= -1*x + 2

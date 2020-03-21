@@ -37,7 +37,7 @@ fn main() {
         .get_matches();
 
     let ilp = parser::parse_file(matches.value_of("input").unwrap()).unwrap();
-    ilp.print_details();
+    ilp.print_details("");
 
     let res = match matches.value_of("algorithm") {
         Some("steinitz")    => steinitz::solve(&ilp),
@@ -48,7 +48,7 @@ fn main() {
     println!();
 
     match res {
-        Ok(x) => println!("Found a solution! x={:?}", x),
+        Ok(x) => println!("Solution: x={:?}", x),
         Err(ILPError::NoSolution) => println!("The ILP has no solution."),
         Err(ILPError::Unbounded)  => println!("The ILP is unbounded."),
         Err(_) => println!("This ILP could not be solved.")

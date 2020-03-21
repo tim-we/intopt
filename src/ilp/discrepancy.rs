@@ -1,4 +1,4 @@
-use super::{ILP, Vector, ILPError, IntData};
+use super::{ILP, Vector, ILPError, IntData, Matrix};
 use std::time::Instant;
 use std::cmp::max;
 use std::f64;
@@ -14,15 +14,24 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     println!("Solving ILP with the Discrepancy Algorithm...");
     let start = Instant::now();
 
-    if ilp.A.has_duplicate_columns() {
-        println!(" -> The matrix has duplicate columns!");
-        return Err(ILPError::UnsupportedMatrix);
-    }
+    let modified_ilp;
+
+    let p = if ilp.A.has_duplicate_columns() {
+            println!(" -> The matrix has duplicate columns!");
+            let (new_ilp, removed) = ilp_with_unique_columns(ilp);
+            println!(" -> Solving modified ILP (removed {} columns)", removed);
+            new_ilp.print_details("    ");
+
+            modified_ilp = new_ilp;
+            &modified_ilp
+        } else {
+            ilp
+        };
     
     // constants
-    let (_,n) = ilp.A.size;
+    let (_,n) = p.A.size;
     #[allow(non_snake_case)]
-    let H = ilp.A.herdisc_upper_bound().ceil() as i32;
+    let H = p.A.herdisc_upper_bound().ceil() as i32;
     #[allow(non_snake_case)]
     let K = compute_K(ilp);
     let b_bound = 4*H;
@@ -30,13 +39,13 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     println!(" -> H = {} >= herdisc(A)", H);
     println!(" -> Iterations: K = {}", K);
 
-    let mut solutions     = LookupTable::with_capacity(ilp.A.num_cols());
-    let mut new_solutions = LookupTable::with_capacity(ilp.A.num_cols());
+    let mut solutions     = LookupTable::with_capacity(p.A.num_cols());
+    let mut new_solutions = LookupTable::with_capacity(p.A.num_cols());
     let mut x_bound = 1.0; // (6/5)^i
     let mut sb:Vector;  // scaled b (by 2^{i-K})
 
     // i=0 (trivial solutions)
-    for (i, (column, &cost)) in ilp.A.iter().zip(ilp.c.iter()).enumerate() {
+    for (i, (column, &cost)) in p.A.iter().zip(p.c.iter()).enumerate() {
          solutions.insert(column.clone(), (Vector::unit(n, i), cost));
     }
 
@@ -44,7 +53,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     for i in 1..K+1 {
         x_bound *= 1.2;
         let x_ibound = x_bound as IntData;
-        sb = compute_sb(&ilp.b, K, i);
+        sb = compute_sb(&p.b, K, i);
         
         // generate new solutions
         for (j, (b1, (x1,c1))) in solutions.iter().enumerate() {
@@ -80,7 +89,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     println!(" -> {} iterations completed.", K);
     println!(" -> Time elapsed: {:?}", start.elapsed());
 
-    match solutions.get(&ilp.b) {
+    match solutions.get(&p.b) {
         Some((x,_)) => Ok(x.clone()),
         None => Err(ILPError::NoSolution)
     }
@@ -110,4 +119,42 @@ fn compute_sb(b:&Vector, k:i32, i:i32) -> Vector {
     }
 
     v
+}
+
+fn ilp_with_unique_columns(ilp:&ILP) -> (ILP, usize) {
+    let mut mat = Matrix {
+        columns: Vec::new(),
+        size: (ilp.b.len(), 0)
+    };
+
+    let mut c = Vector {
+        data: Vec::new()
+    };
+
+    let mut removed = Vec::new();
+    for (i, col1) in ilp.A.iter().enumerate() {
+        if removed.contains(&i) {
+            continue;
+        }
+
+        let mut best = (col1, ilp.c.data[i]);
+        for (j, col2) in ilp.A.iter().enumerate().skip(i+1) {
+            if col1 == col2 {
+                let cost = ilp.c.data[j];
+                // keep column with highest cost/weight
+                if cost > best.1 {
+                    best = (col2, cost);
+                    removed.push(i);
+                } else {
+                    removed.push(j);
+                }
+            }
+        }
+        
+        mat.columns.push(best.0.clone());
+        mat.size.1 += 1;
+        c.data.push(best.1);
+    }
+
+    (ILP::new(mat, ilp.b.clone(), c), removed.len())
 }

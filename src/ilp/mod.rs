@@ -53,15 +53,19 @@ impl ILP {
         }
     }
 
-    pub fn print_details(&self) {
-        println!("ILP details:");
-        println!(" -> constraints: {}", self.A.size.0);
-        println!(" -> variables: {:3}", self.A.size.1);
-        println!(" -> \u{0394}    = {}", self.delta_A);
-        println!(" -> \u{2016}b\u{2016}\u{221E} = {}", self.delta_b);
-        println!(" -> Matrix A:\n{}", self.A);
-        println!(" -> b = {:?}", self.b);
-        println!(" -> c = {:?}\n", self.c);
+    pub fn print_details(&self, prefix:&str) {
+        println!("{}ILP details:", prefix);
+        println!("{} -> constraints: {}",  prefix, self.A.size.0);
+        println!("{} -> variables: {:3}",  prefix, self.A.size.1);
+        println!("{} -> \u{0394}    = {}", prefix, self.delta_A);
+        println!("{} -> \u{2016}b\u{2016}\u{221E} = {}", prefix, self.delta_b);
+        if self.A.size.0 > 1 {
+            println!("{} -> Matrix A:\n{}", prefix, self.A);
+        } else {
+            print!(  "{} -> Matrix A: {}",  prefix, self.A);
+        }
+        println!("{} -> b = {:?}",   prefix, self.b);
+        println!("{} -> c = {:?}\n", prefix, self.c);
     }
 }
 

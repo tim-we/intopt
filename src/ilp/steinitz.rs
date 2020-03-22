@@ -32,7 +32,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
 
     if ilp.A.has_zero_columns() {
         println!(" -> Matrix contains zero columns!");
-        return Err(ILPError::UnsupportedMatrix);
+        return Err(ILPError::Unsupported);
     }
 
     // constants

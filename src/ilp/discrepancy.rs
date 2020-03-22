@@ -1,10 +1,10 @@
-use super::{ILP, Vector, ILPError, IntData, Matrix};
+use super::{ILP, Vector, ILPError, IntData, Matrix, Cost};
 use std::time::Instant;
 use std::cmp::max;
-use std::f64;
+use std::{f64, i32};
 
 type Map<K,V> = hashbrown::HashMap<K,V>;
-type LookupTable = Map<Vector, (Vector, i32)>;
+type LookupTable = Map<Vector, (Vector, Cost)>;
 
 /*
     based on https://arxiv.org/abs/1803.04744
@@ -13,6 +13,11 @@ type LookupTable = Map<Vector, (Vector, i32)>;
 pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     println!("Solving ILP with the Discrepancy Algorithm...");
     let start = Instant::now();
+
+    if ilp.b.inf_norm() == 0 {
+        println!(" -> b=0");
+        return Err(ILPError::Unsupported);
+    }
 
     let modified_ilp;
 
@@ -29,7 +34,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
         };
     
     // constants
-    let (_,n) = p.A.size;
+    let (m,n) = p.A.size;
     #[allow(non_snake_case)]
     let H = p.A.herdisc_upper_bound().ceil() as i32;
     #[allow(non_snake_case)]
@@ -37,66 +42,107 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     let b_bound = 4*H;
 
     println!(" -> H = {} >= herdisc(A)", H);
-    println!(" -> Iterations: K = {}", K);
+    println!(" -> K = {}", K);
 
-    let mut solutions     = LookupTable::with_capacity(p.A.num_cols());
-    let mut new_solutions = LookupTable::with_capacity(p.A.num_cols());
-    let mut x_bound = 1.0; // (6/5)^i
-    let mut sb:Vector;  // scaled b (by 2^{i-K})
-
+    let mut solutions = LookupTable::with_capacity(1024);
+    
     // i=0 (trivial solutions)
+    solutions.insert(Vector::zero(m), (Vector::zero(n), 0));
     for (i, (column, &cost)) in p.A.iter().zip(p.c.iter()).enumerate() {
-         solutions.insert(column.clone(), (Vector::unit(n, i), cost));
+        solutions.insert(column.clone(), (Vector::unit(n, i), cost));
     }
 
-    // i={1,...,K}
-    for i in 1..K+1 {
-        x_bound *= 1.2;
-        let x_ibound = x_bound as IntData;
-        sb = compute_sb(&p.b, K, i);
-        
-        // generate new solutions
-        for (j, (b1, (x1,c1))) in solutions.iter().enumerate() {
-            for (b2, (x2,c2)) in solutions.iter().skip(j+1) {
-                let b = b1.add(b2);
-                let x = x1.add(x2);
-                let c = c1+c2;
+    // pre-compute main iteration (scaled b, max iterations, max x bound)
+    let mut iterations = Vec::<(Vector, usize)>::with_capacity(max(p.delta_b as usize, 2));
+    {
+        let mut last = (compute_sb(&p.b, K, 1), 1); // i=1
 
-                if x.one_norm() > x_ibound || !sb.max_distance(&b, b_bound) {
-                    continue;
+        // i={1,...,K}
+        for i in 1..K+1 {
+            let sb = compute_sb(&p.b, K, i); // scaled b (by 2^{i-K})
+
+            if sb != last.0 {
+                iterations.push(last);
+                last = (sb, 1);
+
+                if i == K {
+                    iterations.push(last.clone());
                 }
-
-                let insert = match new_solutions.get(&b) {
-                    Some(&(_,cost)) => { cost < c },
-                    None => true
-                };
-
-                if insert {
-                    new_solutions.insert(b, (x, c));
-                }
+            } else {
+                last.1 += 1;
             }
         }
 
-        for (b,x) in new_solutions.drain() {
-            solutions.insert(b,x);
-        }
-
-        if i%50 == 0 {
-            println!("    > Iteration {}, size: {}, t: {:?}", i, solutions.len(), start.elapsed());
-        }
+        assert_eq!(last.0, p.b);
+        println!(" -> Iterations: {}", iterations.len());
     }
 
-    println!(" -> {} iterations completed.", K);
-    println!(" -> Time elapsed: {:?}", start.elapsed());
+    let mut last_solutions = solutions.clone();
+    let mut new_solutions  = LookupTable::with_capacity(512);
+    
+    println!(" -> Building lookup table...");
+    for (sb, it_max) in iterations {
+        println!("    > size: {}", solutions.len());
+
+        for j in 0..it_max {
+            // generate new solutions
+            let iterator = if j==0 { solutions.iter() } else { last_solutions.iter() };
+            for (k, (b1, (x1,c1))) in iterator.enumerate() {
+                for (b2, (x2,c2))  in solutions.iter().skip(if j==0 {k+1} else {0}) {
+                    let b = b1.add(b2);
+                    let x = x1.add(x2);
+                    let c = c1+c2;
+
+                    if !sb.max_distance(&b, b_bound) {
+                        continue;
+                    }
+
+                    let insert = match solutions.get(&b) {
+                        Some(&(_,cost)) => { cost < c },
+                        None => true
+                    };
+
+                    if insert {
+                        new_solutions.insert(b, (x,c));
+                    }
+                }
+            }
+
+            // if there are no new solutions we can skip iterations j+1..it_max
+            if new_solutions.is_empty() {
+                continue;
+            }
+
+            // update lookup table
+            for (b,x) in new_solutions.iter() {
+                solutions.insert(b.clone(), x.clone());
+            }
+
+            // swap buffers
+            {
+                let tmp = last_solutions;
+                last_solutions = new_solutions;
+                new_solutions = tmp;
+                new_solutions.clear();
+            }
+        }
+
+        last_solutions.clear();
+    }
+
+    println!(" -> Done. Time elapsed: {:?}", start.elapsed());
 
     match solutions.get(&p.b) {
-        Some((x,_)) => Ok(x.clone()),
+        Some((x,_)) => {
+            println!(" -> Solution cost: {}", x.dot(&p.c));
+            Ok(x.clone())
+        },
         None => Err(ILPError::NoSolution)
     }
 }
 
 #[allow(non_snake_case)]
-fn compute_K(ilp:&ILP) -> i32 {
+fn compute_K(ilp:&ILP) -> usize {
     let n = ilp.A.size.0 as f64;
     let m = ilp.A.size.0 as i32;
 
@@ -105,12 +151,12 @@ fn compute_K(ilp:&ILP) -> i32 {
     let x3 = 2.0 * f64::ln(n);
     let x4 = f64::ln(1.2);
 
-    f64::ceil((x3 + x2)/x4) as i32
+    f64::ceil((x3 + x2)/x4) as usize
 }
 
-fn compute_sb(b:&Vector, k:i32, i:i32) -> Vector {
-    assert!(k>=i);
-    let s = 0.5f64.powi(k-i);
+fn compute_sb(b:&Vector, k:usize, i:usize) -> Vector {
+    debug_assert!(k >= i);
+    let s = 0.5f64.powi(k as i32 - i as i32);
     let mut v = Vector::new(b.len());
 
     for &bv in b.iter() {

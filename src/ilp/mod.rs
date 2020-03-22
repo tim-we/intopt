@@ -32,7 +32,7 @@ pub struct ILP {
 pub enum ILPError {
     NoSolution,
     Unbounded,
-    UnsupportedMatrix
+    Unsupported
 }
 
 impl ILP {
@@ -43,6 +43,8 @@ impl ILP {
 
         let da = mat.max_abs_entry();
         let db = b.inf_norm();
+
+        assert!(da >= 0 && db >= 0);
     
         ILP {
             A: mat,

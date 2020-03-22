@@ -9,6 +9,7 @@ mod graph;
 
 pub type IntData = i32;
 pub type Cost = i32;
+pub type VarMapping = (String, usize);
 
 #[derive(Hash, PartialEq, Eq, Clone)]
 pub struct Vector {
@@ -26,7 +27,8 @@ pub struct ILP {
     b: Vector,
     c: Vector,
     delta_A: IntData,
-    delta_b: IntData
+    delta_b: IntData,
+    named_variables: Vec<VarMapping>
 }
 
 pub enum ILPError {
@@ -51,8 +53,24 @@ impl ILP {
             b: b,
             c: c,
             delta_A: da,
-            delta_b: db
+            delta_b: db,
+            named_variables: Vec::new()
         }
+    }
+
+    pub fn with_named_vars(mat:Matrix, b:Vector, c:Vector, vars:Vec<VarMapping>) -> Self {
+        let mut ilp = ILP::new(mat, b, c);
+
+        for (s, idx) in vars.iter() {
+            assert!(s.len() > 0);
+            assert!(idx < &ilp.c.len());
+        }
+
+        let mut variables = vars;
+        variables.sort_by(|a,b| a.1.cmp(&b.1));
+
+        ilp.named_variables = variables;
+        ilp
     }
 
     pub fn print_details(&self, prefix:&str) {
@@ -68,6 +86,16 @@ impl ILP {
         }
         println!("{} -> b = {:?}",   prefix, self.b);
         println!("{} -> c = {:?}\n", prefix, self.c);
+    }
+
+    pub fn print_solution(&self, x:&Vector) {
+        if self.named_variables.len() == 0 {
+            println!(" x={:?}", x);
+        } else {
+            for (name, idx) in self.named_variables.iter() {
+                println!(" {} = {}", name, x.data[*idx]);
+            }
+        }
     }
 }
 

@@ -48,7 +48,10 @@ fn main() {
     println!();
 
     match res {
-        Ok(x) => println!("Solution: x={:?}", x),
+        Ok(x) => {
+            println!("Solution:");
+            ilp.print_solution(&x)
+        },
         Err(ILPError::NoSolution) => println!("The ILP has no solution."),
         Err(ILPError::Unbounded)  => println!("The ILP is unbounded."),
         Err(_) => println!("This ILP could not be solved.")

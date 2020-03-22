@@ -104,7 +104,7 @@ pub fn parse_file(file:&str) -> Result<ILP, ()> {
 
     println!();
 
-    Ok(ILP::new(a,b,c))
+    Ok(ILP::with_named_vars(a,b,c,variables.drain().collect()))
 }
 
 fn find_variables(tree: &Pair<Rule>) -> Vec<String> {

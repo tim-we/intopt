@@ -10,7 +10,6 @@ fn main() {
     let matches = App::new("IntOpt ILP Solver")
         .version(env!("CARGO_PKG_VERSION"))
         .author("Tim Weißenfels <tim.weissenfels@stu.uni-kiel.de>")
-        //.about("Solves integer linear programs (ILPs).\nhttps://github.com/tim-we/intopt")
         .about(
             &format!("{}\n{}\n{}",
                 env!("CARGO_PKG_DESCRIPTION"),

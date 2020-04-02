@@ -152,7 +152,7 @@ fn multiple(pair: Pair<Rule>) -> Multiple {
     assert_eq!(pair.as_rule(), Rule::multiple);
 
     let mut var_name = "".to_string();
-    let mut multiple = 1;
+    let mut multiple = if pair.as_str().starts_with('-') { -1 } else { 1 };
 
     for p in pair.into_inner() {
         match p.as_rule() {

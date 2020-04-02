@@ -1,0 +1,18 @@
+minimize:
+    x1 + x2 + x3 + x4 + x5 + x6
+subject to:
+    x1 + 1 + -x2 + x3 >= 1
+    x3 + x4 + x5 >= 1
+    x1 + x6 >= 1
+    1 + -x5 + 1 + -x6 >= 1  
+    1 + -x6 >= 1
+notes:
+Boolean SAT:
+
+    ( x1 or !x2 or x3) 
+and ( x3 or  x4 or x5)
+and ( x1 or  x6)
+and (!x5 or !x6)
+and (!x6)
+
+If the solver finds any xi > 1 the problem is not satisfiable.

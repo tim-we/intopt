@@ -1,7 +1,7 @@
 WHITESPACE  = _{ " " }
-integer     = @{ "-"? ~ ASCII_DIGIT+ }
+integer     = @{ ("-"? ~ ASCII_DIGIT+) }
 variable    = @{ ASCII_ALPHA ~ ASCII_ALPHANUMERIC* }
-multiple    = { (integer ~ "*")? ~ variable }
+multiple    = { ((integer ~ "*") | "-")? ~ variable }
 term        = { multiple | integer }
 sum         = { (term ~ "+" ~ sum) | term }
 equation    = { sum ~ "=" ~ sum }

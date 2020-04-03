@@ -78,7 +78,13 @@ impl ILP {
         println!(" -> constraints: {}", self.A.size.0);
         println!(" -> variables: {:3}", self.A.size.1);
         let list:Vec<&String> = self.named_variables.iter().map(|(s,_)| s).collect();
-        println!("    {:?} + {} slack variables", list, self.A.size.1 - list.len());
+        print!("    {:?}", list);
+        let slacks = self.A.size.1 - list.len();
+        if slacks > 0 {
+            println!(" + {} slack variables", slacks);
+        } else {
+            println!();
+        }
         println!(" -> \u{0394}    = {}", self.delta_A);
         println!(" -> \u{2016}b\u{2016}\u{221E} = {}", self.delta_b);
         if self.A.size.0 > 1 {

@@ -23,9 +23,9 @@ pub struct Matrix {
 
 #[allow(non_snake_case)]
 pub struct ILP {
-    A: Matrix,
-    b: Vector,
-    c: Vector,
+    pub A: Matrix,
+    pub b: Vector,
+    pub c: Vector,
     delta_A: IntData,
     delta_b: IntData,
     named_variables: Vec<VarMapping>
@@ -73,19 +73,21 @@ impl ILP {
         ilp
     }
 
-    pub fn print_details(&self, prefix:&str) {
-        println!("{}ILP details:", prefix);
-        println!("{} -> constraints: {}",  prefix, self.A.size.0);
-        println!("{} -> variables: {:3}",  prefix, self.A.size.1);
-        println!("{} -> \u{0394}    = {}", prefix, self.delta_A);
-        println!("{} -> \u{2016}b\u{2016}\u{221E} = {}", prefix, self.delta_b);
+    pub fn print_details(&self) {
+        println!("ILP details:");
+        println!(" -> constraints: {}", self.A.size.0);
+        println!(" -> variables: {:3}", self.A.size.1);
+        let list:Vec<&String> = self.named_variables.iter().map(|(s,_)| s).collect();
+        println!("    {:?} + {} slack variables", list, self.A.size.1 - list.len());
+        println!(" -> \u{0394}    = {}", self.delta_A);
+        println!(" -> \u{2016}b\u{2016}\u{221E} = {}", self.delta_b);
         if self.A.size.0 > 1 {
-            println!("{} -> Matrix A:\n{}", prefix, self.A);
+            println!(" -> Matrix A:\n{}", self.A);
         } else {
-            print!(  "{} -> Matrix A: {}",  prefix, self.A);
+            print!(  " -> Matrix A: {}", self.A);
         }
-        println!("{} -> b = {:?}",   prefix, self.b);
-        println!("{} -> c = {:?}\n", prefix, self.c);
+        println!(" -> b = {:?}", self.b);
+        println!(" -> c = {:?}\n", self.c);
     }
 
     pub fn print_solution(&self, x:&Vector) {
@@ -96,6 +98,63 @@ impl ILP {
                 println!(" {} = {}", name, x.data[*idx]);
             }
         }
+    }
+
+    pub fn simplify(self) -> Self {
+        assert!(self.A.columns.len() > 1);
+        
+        let mut mat = Matrix {
+            columns: Vec::with_capacity(self.A.size.1 - 1),
+            size: (self.b.len(), 0)
+        };
+    
+        let mut c = Vector {
+            data: Vec::new()
+        };
+        
+        let mut var_names:Vec<Option<String>> = vec![None; self.A.size.1];
+        self.named_variables.iter().for_each(|(str, i)| var_names[*i] = Some(str.clone()));
+        
+        let mut skip = Vec::new();
+        for (i, col1) in self.A.iter().enumerate() {
+            if skip.contains(&i) {
+                continue;
+            }
+    
+            let mut best = (col1, self.c.data[i]);
+            for (j, col2) in self.A.iter().enumerate().skip(i+1) {
+                if col1 == col2 {
+                    let cost = self.c.data[j];
+                    
+                    // keep column with highest cost/weight
+                    if cost > best.1 {
+                        best = (col2, cost);
+                        var_names.remove(i);
+                    } else {
+                        var_names.remove(j);
+                    };
+
+                    skip.push(j);
+                }
+            }
+            
+            mat.columns.push(best.0.clone());
+            mat.size.1 += 1;
+            c.data.push(best.1);
+        }
+
+        let mappings = var_names.into_iter()
+            .enumerate()
+            .map(|(i, o)| match o {
+                Some(str) => Some((str, i)),
+                None      => None
+            })
+            .flatten()
+            .collect();
+
+        println!(" -> Removed {} column(s).", skip.len());
+    
+        ILP::with_named_vars(mat, self.b.clone(), c, mappings)
     }
 }
 

@@ -35,8 +35,15 @@ fn main() {
         )
         .get_matches();
 
-    let ilp = parser::parse_file(matches.value_of("input").unwrap()).unwrap();
-    ilp.print_details("");
+    let mut ilp = parser::parse_file(matches.value_of("input").unwrap()).unwrap();
+
+    if ilp.A.has_duplicate_columns() {
+        println!(" -> The matrix has duplicate columns!");
+        ilp = ilp.simplify();
+        println!();
+    }
+
+    ilp.print_details();
 
     let res = match matches.value_of("algorithm") {
         Some("steinitz")    => steinitz::solve(&ilp),

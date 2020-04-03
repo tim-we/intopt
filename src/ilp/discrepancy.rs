@@ -1,4 +1,4 @@
-use super::{ILP, Vector, ILPError, IntData, Matrix, Cost};
+use super::{ILP, Vector, ILPError, IntData, Cost};
 use std::time::Instant;
 use std::cmp::max;
 use std::{f64, i32};
@@ -18,25 +18,11 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
         println!(" -> b=0");
         return Err(ILPError::Unsupported);
     }
-
-    let modified_ilp;
-
-    let p = if ilp.A.has_duplicate_columns() {
-            println!(" -> The matrix has duplicate columns!");
-            let (new_ilp, removed) = ilp_with_unique_columns(ilp);
-            println!(" -> Solving modified ILP (removed {} columns)", removed);
-            new_ilp.print_details("    ");
-
-            modified_ilp = new_ilp;
-            &modified_ilp
-        } else {
-            ilp
-        };
     
     // constants
-    let (m,n) = p.A.size;
+    let (m,n) = ilp.A.size;
     #[allow(non_snake_case)]
-    let H = p.A.herdisc_upper_bound().ceil() as i32;
+    let H = ilp.A.herdisc_upper_bound().ceil() as i32;
     #[allow(non_snake_case)]
     let K = compute_K(ilp);
     let b_bound = 4*H;
@@ -48,18 +34,18 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     
     // i=0 (trivial solutions)
     solutions.insert(Vector::zero(m), (Vector::zero(n), 0));
-    for (i, (column, &cost)) in p.A.iter().zip(p.c.iter()).enumerate() {
+    for (i, (column, &cost)) in ilp.A.iter().zip(ilp.c.iter()).enumerate() {
         solutions.insert(column.clone(), (Vector::unit(n, i), cost));
     }
 
     // pre-compute main iteration (scaled b, max iterations, max x bound)
-    let mut iterations = Vec::<(Vector, usize)>::with_capacity(max(p.delta_b as usize, 2));
+    let mut iterations = Vec::<(Vector, usize)>::with_capacity(max(ilp.delta_b as usize, 2));
     {
-        let mut last = (compute_sb(&p.b, K, 1), 1); // i=1
+        let mut last = (compute_sb(&ilp.b, K, 1), 1); // i=1
 
         // i={1,...,K}
         for i in 1..K+1 {
-            let sb = compute_sb(&p.b, K, i); // scaled b (by 2^{i-K})
+            let sb = compute_sb(&ilp.b, K, i); // scaled b (by 2^{i-K})
 
             if sb != last.0 {
                 iterations.push(last);
@@ -73,7 +59,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
             }
         }
 
-        assert_eq!(last.0, p.b);
+        assert_eq!(last.0, ilp.b);
         println!(" -> Iterations: {}", iterations.len());
     }
 
@@ -132,9 +118,9 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
 
     println!(" -> Done. Time elapsed: {:?}", start.elapsed());
 
-    match solutions.get(&p.b) {
+    match solutions.get(&ilp.b) {
         Some((x,_)) => {
-            println!(" -> Solution cost: {}", x.dot(&p.c));
+            println!(" -> Solution cost: {}", x.dot(&ilp.c));
             Ok(x.clone())
         },
         None => Err(ILPError::NoSolution)
@@ -165,42 +151,4 @@ fn compute_sb(b:&Vector, k:usize, i:usize) -> Vector {
     }
 
     v
-}
-
-fn ilp_with_unique_columns(ilp:&ILP) -> (ILP, usize) {
-    let mut mat = Matrix {
-        columns: Vec::new(),
-        size: (ilp.b.len(), 0)
-    };
-
-    let mut c = Vector {
-        data: Vec::new()
-    };
-
-    let mut removed = Vec::new();
-    for (i, col1) in ilp.A.iter().enumerate() {
-        if removed.contains(&i) {
-            continue;
-        }
-
-        let mut best = (col1, ilp.c.data[i]);
-        for (j, col2) in ilp.A.iter().enumerate().skip(i+1) {
-            if col1 == col2 {
-                let cost = ilp.c.data[j];
-                // keep column with highest cost/weight
-                if cost > best.1 {
-                    best = (col2, cost);
-                    removed.push(i);
-                } else {
-                    removed.push(j);
-                }
-            }
-        }
-        
-        mat.columns.push(best.0.clone());
-        mat.size.1 += 1;
-        c.data.push(best.1);
-    }
-
-    (ILP::new(mat, ilp.b.clone(), c), removed.len())
 }

@@ -51,8 +51,6 @@ pub fn parse_file(file:&str) -> Result<ILP, ()> {
                 variables.insert(var.clone(), variables.len());
             }
         }
-
-        println!("Variables: {:?}", list);
     }
 
     let constraints = get_constraints(constraints_tree);
@@ -96,10 +94,6 @@ pub fn parse_file(file:&str) -> Result<ILP, ()> {
             let j = *variables.get(&m.1).unwrap();
             a.add_to_entry(row, j, -m.0);
         }
-    }
-
-    if slack > 0 {
-        println!("Introduced {} slack variables.", slack);
     }
 
     println!();

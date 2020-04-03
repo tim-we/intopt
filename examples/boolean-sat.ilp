@@ -15,4 +15,4 @@ and ( x1 or  x6)
 and (!x5 or !x6)
 and (!x6)
 
-If the solver finds any xi > 1 the problem is not satisfiable.
+If the solver finds any xi > 1 we would have to add additional constraints (xi <= 1)

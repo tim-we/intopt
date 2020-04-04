@@ -133,12 +133,16 @@ impl ILP {
                     let cost = self.c.data[j];
                     
                     // keep column with highest cost/weight
-                    if cost > best.1 {
+                    let removed = if cost > best.1 {
                         best = (col2, cost);
-                        var_names.remove(i);
+                        var_names.remove(i)
                     } else {
-                        var_names.remove(j);
+                        var_names.remove(j)
                     };
+
+                    if let Some(name) = removed {
+                        println!("    {} = 0", name);
+                    }
 
                     skip.push(j);
                 }

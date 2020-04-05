@@ -2,30 +2,14 @@ use num_traits::Float;
 use super::{ILP, Vector, ILPError, Cost};
 use std::time::Instant;
 use super::graph::*;
+use std::io;
+use std::io::Write;
+use ignore_result::Ignore;
 
 /* 
-    based on https://arxiv.org/abs/1707.00481v3    
-
-    vertices = {0}
-    edges = {}
-    surface = {0}
-    new_surface = {}
-    ib = 1.0/||b||
-    while surface not empty
-        for all columns v_i in A:
-            for all x in surface
-                x' = x + v_i
-                h = clamp(<x',b>*ib, 0, 1) * b //closest point on line
-                if ||x' - h|| <= bound 
-                    if x' not in vertices
-                        add x' to vertices
-                        add x' to new_surface
-                    add edge (x,x') to edges with weight c_i
-        surface = new_surface
-        new_surface = {}
-    compute longest path
-    PROFIT
+    based on https://arxiv.org/abs/1707.00481v3
 */
+
 pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     println!("Solving ILP with the Steinitz Algorithm...");
     let start = Instant::now();
@@ -60,10 +44,15 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     bf_data.push((0,0,0));
 
     // construct graph
-    println!(" -> Constructing the graph...");
+    print!(" -> Constructing the graph");
+    io::stdout().flush().ignore();
+
     let mut bound;
     let mut depth = 0;
     while !surface.is_empty() {
+        print!(".");
+        io::stdout().flush().ignore();
+        
         // pre-allocate memory for new nodes
         let max_new_nodes = surface.len() * columns;
         graph.reserve(max_new_nodes);
@@ -123,6 +112,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
         }
     }
 
+    println!();
     println!(" -> Graph constructed! t={:?}", start.elapsed());
     println!("    #vertices: {}, #edges: {}", graph.size(), graph.num_edges());
     println!("    depth: {}, max. surface size: {}", depth, max_surface_size);

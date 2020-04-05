@@ -29,17 +29,17 @@ ILP details:
  -> b = [5, 6, 5]
  -> c = [1, 2, 3]
 
-Solving ILP with the Steinitz Algorithm...
- -> Constructing the graph...
- -> Graph constructed! t=626.992µs
+Solving ILP with the Eisenbrand & Weismantel algorithm...
+ -> Constructing the graph.............................
+ -> Graph constructed! t=1.172876ms
     #vertices: 1070, #edges: 2864
     depth: 29, max. surface size: 79
     radius: start=12 end=6.6206894
  -> Continue Bellman-Ford Algorithm to find longest path...
- -> 1 Bellman-Ford iterations, t=647.791µs
+ -> 1 Bellman-Ford iterations, t=1.203325ms
  -> Longest path cost: 26
- -> Creating solution vector... t=650.67µs
- -> Done! Time elapsed: 652.319µs
+ -> Creating solution vector... t=1.210861ms
+ -> Done! Time elapsed: 1.214739ms
 
 Solution:
  x1 = 5

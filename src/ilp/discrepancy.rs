@@ -11,12 +11,12 @@ type LookupTable = Map<Vector, (Vector, Cost)>;
 */
 
 pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
-    println!("Solving ILP with the Discrepancy Algorithm...");
+    println!("Solving ILP with the Jansen & Rohwedder algorithm...");
     let start = Instant::now();
 
-    if ilp.b.inf_norm() == 0 {
-        println!(" -> b=0");
-        return Err(ILPError::Unsupported);
+    if !ilp.A.non_negative() {
+        println!(" -> ILP might by unbounded.");
+        //TODO
     }
     
     // constants
@@ -39,13 +39,13 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     }
 
     // pre-compute main iteration (scaled b, max iterations, max x bound)
-    let mut iterations = Vec::<(Vector, usize)>::with_capacity(max(ilp.delta_b as usize, 2));
+    let mut iterations = Vec::<(Vector, usize)>::new();
     {
         let mut last = (compute_sb(&ilp.b, K, 1), 1); // i=1
 
         // i={1,...,K}
         for i in 1..K+1 {
-            let sb = compute_sb(&ilp.b, K, i); // scaled b (by 2^{i-K})
+            let sb = compute_sb(&ilp.b, K, i); // b * 2^{i-K}
 
             if sb != last.0 {
                 iterations.push(last);

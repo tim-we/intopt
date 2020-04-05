@@ -11,13 +11,8 @@ use ignore_result::Ignore;
 */
 
 pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
-    println!("Solving ILP with the Steinitz Algorithm...");
+    println!("Solving ILP with the Eisenbrand & Weismantel algorithm...");
     let start = Instant::now();
-
-    if ilp.A.has_zero_columns() {
-        println!(" -> Matrix contains zero columns!");
-        return Err(ILPError::Unsupported);
-    }
 
     // constants
     let r = 1.0 / ilp.b.norm();

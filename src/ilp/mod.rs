@@ -33,8 +33,7 @@ pub struct ILP {
 
 pub enum ILPError {
     NoSolution,
-    Unbounded,
-    Unsupported
+    Unbounded
 }
 
 impl ILP {
@@ -382,6 +381,16 @@ impl Matrix {
 
     pub fn add_to_entry(&mut self, i:usize, j:usize, val:IntData) {
         self.columns[j].data[i] += val;
+    }
+
+    pub fn non_negative(&self) -> bool {
+        for c in self.columns.iter() {
+            if c.iter().filter(|&&x| x < 0).count() > 0 {
+                return false;
+            }
+        }
+
+        true
     }
 }
 

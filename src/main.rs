@@ -21,9 +21,13 @@ fn main() {
                 .short("a")
                 .long("algorithm")
                 .value_name("ALGORITHM")
-                .default_value("steinitz")
-                .possible_values(&["steinitz", "discrepancy"])
-                .help("Sets the algorithm to solve the ILP.")
+                .default_value("EW")
+                .hide_default_value(true)
+                .possible_values(&["ew", "jr"])
+                .hide_possible_values(true)
+                .help("Sets the algorithm to solve the ILP with.\n\
+                    ew for Eisenbrand & Weismantel (default)\n\
+                    jr for Jansen & Rohwedder")
                 .takes_value(true),
         )
         .arg(
@@ -46,8 +50,8 @@ fn main() {
     ilp.print_details();
 
     let res = match matches.value_of("algorithm") {
-        Some("steinitz")    => steinitz::solve(&ilp),
-        Some("discrepancy") => discrepancy::solve(&ilp),
+        Some("ew")    => steinitz::solve(&ilp),
+        Some("jr") => discrepancy::solve(&ilp),
         _ => panic!()
     };
 
@@ -59,7 +63,6 @@ fn main() {
             ilp.print_solution(&x)
         },
         Err(ILPError::NoSolution) => println!("The ILP has no solution."),
-        Err(ILPError::Unbounded)  => println!("The ILP is unbounded."),
-        Err(_) => println!("This ILP could not be solved.")
+        Err(ILPError::Unbounded)  => println!("The ILP is unbounded.")
     }
 }

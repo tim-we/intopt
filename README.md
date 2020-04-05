@@ -1,7 +1,7 @@
 ## ILP Solver
 
 A Rust program that solves ILPs (integer linear programs) using the algorithms described in [1] and [2].
-Unfortunately the algorithms/this implementation are not very fast, especially the second one.  
+Unfortunately the algorithms (or this implementation) are not very fast, especially the second one.  
 Keep the number of constraints low!
 
 ## Usage

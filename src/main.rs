@@ -21,7 +21,7 @@ fn main() {
                 .short("a")
                 .long("algorithm")
                 .value_name("ALGORITHM")
-                .default_value("EW")
+                .default_value("ew")
                 .hide_default_value(true)
                 .possible_values(&["ew", "jr"])
                 .hide_possible_values(true)

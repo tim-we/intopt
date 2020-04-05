@@ -1,0 +1,23 @@
+maximize:
+    x1 + x2 + x3 + x4 + x5 + x6
+subject to:
+    x1 + x2 <= 1
+    x2 + x3 <= 1
+    x3 + x4 <= 1
+    x1 + x5 <= 1
+    x2 + x5 <= 1
+    x3 + x6 <= 1
+    x5 + x6 <= 1
+notes:
+We are looking for the maximum independent set in the following graph:
+
+1 -- 2 -- 3 -- 4
+  \  |    |
+   \ |    |
+     5 -- 6
+
+Solution: {2,4,6}
+
+x_i indicates whether i is in the independent set.
+For each edge we have to add a constraint:
+At most one endpoint can be in the set.

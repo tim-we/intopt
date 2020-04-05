@@ -1,0 +1,12 @@
+minimize:
+    x1 + x2 + x3 + x4 + x5
+subject to:
+    -7*x1 + -3*x2 + -2*x3 + 5*x4 + 8*x5 = 0
+    x1 + x2 + x3 + x4 + x5 >= 1
+    x1 + x2 + x3 + x4 + x5 <= 5
+notes:
+Is there a (non-empty) subset of {-7, -3, -2, 5, 8} that sums to 0?
+Solution: {-3,-2, 5}
+x_i indicates whether the number is in the subset or not.
+Warning: x_i <= 1 constraints were omitted.
+Thus a solution of this ILP is not necessarily a solution to the subset sum problem.

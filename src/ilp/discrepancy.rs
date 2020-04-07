@@ -23,21 +23,25 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     println!(" -> H = {} >= herdisc(A)", H);
     println!(" -> K = {}", K);
 
+    let res = solve_ilp(ilp, start, H, K, false);
+
+    println!(" -> The ILP has a solution. {:?} elapsed.", start.elapsed());
+
     if !ilp.A.non_negative() {
         println!(" -> ILP might by unbounded. Testing Ax=0...");
         let zero_ilp = ilp.clone();
 
         if let Ok(x) = solve_ilp(&zero_ilp, start, H, compute_K(&zero_ilp), true) {
             if x.dot(&zero_ilp.c) > 0 {
+                println!(" -> Found a solution for Ax=0! {:?} elapsed.", start.elapsed());
                 return Err(ILPError::Unbounded);
             }
         }
-
-        println!(" -> ILP is bounded. {:?} elapsed.", start.elapsed());
-        println!(" -> Starting main algorithm...\n");
     }
 
-    solve_ilp(ilp, start, H, K, false)
+    println!(" -> ILP is bounded. {:?} elapsed.", start.elapsed());
+
+    res
 }
 
 #[allow(non_snake_case)]

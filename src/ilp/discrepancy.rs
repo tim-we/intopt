@@ -14,21 +14,37 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     println!("Solving ILP with the Jansen & Rohwedder algorithm...");
     let start = Instant::now();
 
-    if !ilp.A.non_negative() {
-        println!(" -> ILP might by unbounded.");
-        //TODO
-    }
-    
     // constants
-    let (m,n) = ilp.A.size;
     #[allow(non_snake_case)]
     let H = ilp.A.herdisc_upper_bound().ceil() as i32;
     #[allow(non_snake_case)]
     let K = compute_K(ilp);
-    let b_bound = 4*H;
 
     println!(" -> H = {} >= herdisc(A)", H);
     println!(" -> K = {}", K);
+
+    if !ilp.A.non_negative() {
+        println!(" -> ILP might by unbounded. Testing Ax=0...");
+        let zero_ilp = ilp.clone();
+
+        if let Ok(x) = solve_ilp(&zero_ilp, start, H, compute_K(&zero_ilp), true) {
+            if x.dot(&zero_ilp.c) > 0 {
+                return Err(ILPError::Unbounded);
+            }
+        }
+
+        println!(" -> ILP is bounded. {:?} elapsed.", start.elapsed());
+        println!(" -> Starting main algorithm...\n");
+    }
+
+    solve_ilp(ilp, start, H, K, false)
+}
+
+#[allow(non_snake_case)]
+fn solve_ilp(ilp:&ILP, start:Instant, H:i32, K:usize, silent:bool) -> Result<Vector, ILPError> { 
+    // constants
+    let (m,n) = ilp.A.size;
+    let b_bound = 4*H;
 
     let mut solutions = LookupTable::with_capacity(1024);
     
@@ -60,7 +76,9 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
         }
 
         assert_eq!(last.0, ilp.b);
-        println!(" -> Iterations: {}", iterations.len());
+        if !silent {
+            println!(" -> Iterations: {}", iterations.len());
+        }
     }
 
     let mut last_solutions = solutions.clone();
@@ -116,11 +134,15 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
         last_solutions.clear();
     }
 
-    println!(" -> Done. Time elapsed: {:?}", start.elapsed());
+    if !silent {
+        println!(" -> Done. Time elapsed: {:?}", start.elapsed());
+    }
 
     match solutions.get(&ilp.b) {
         Some((x,_)) => {
-            println!(" -> Solution cost: {}", x.dot(&ilp.c));
+            if !silent {
+                println!(" -> Solution cost: {}", x.dot(&ilp.c));
+            }
             Ok(x.clone())
         },
         None => Err(ILPError::NoSolution)

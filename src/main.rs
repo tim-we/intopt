@@ -50,7 +50,7 @@ fn main() {
     ilp.print_details();
 
     let res = match matches.value_of("algorithm") {
-        Some("ew")    => steinitz::solve(&ilp),
+        Some("ew") => steinitz::solve(&ilp),
         Some("jr") => discrepancy::solve(&ilp),
         _ => panic!()
     };

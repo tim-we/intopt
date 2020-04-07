@@ -16,12 +16,14 @@ pub struct Vector {
     data: Vec<IntData>
 }
 
+#[derive(Clone)]
 pub struct Matrix {
     columns: Vec<Vector>,
     size: (usize, usize) // rows, columns or (m,n)
 }
 
 #[allow(non_snake_case)]
+#[derive(Clone)]
 pub struct ILP {
     pub A: Matrix,
     pub b: Vector,

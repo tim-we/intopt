@@ -58,7 +58,7 @@ fn solve_ilp(ilp:&ILP, start:Instant, H:f32, K:usize, silent:bool) -> Result<Vec
         solutions.insert(column.clone(), (Vector::unit(n, i), cost));
     }
 
-    // pre-compute main iteration (scaled b, max iterations, max x bound)
+    // pre-compute main iteration (scaled b, max iterations)
     let mut iterations = Vec::<(Vector, usize)>::new();
     {
         let mut last = (compute_sb(&ilp.b, K, 1), 1); // i=1
@@ -163,7 +163,7 @@ fn compute_K(ilp:&ILP) -> usize {
     let x3 = 2.0 * f64::ln(n);
     let x4 = f64::ln(1.2);
 
-    f64::ceil((x3 + x2)/x4) as usize
+    max(1, f64::ceil((x3 + x2)/x4) as usize)
 }
 
 fn compute_sb(b:&Vector, k:usize, i:usize) -> Vector {

@@ -16,7 +16,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
 
     // constants
     #[allow(non_snake_case)]
-    let H = ilp.A.herdisc_upper_bound().ceil() as i32;
+    let H = ilp.A.herdisc_upper_bound();
     #[allow(non_snake_case)]
     let K = compute_K(ilp);
 
@@ -45,10 +45,10 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
 }
 
 #[allow(non_snake_case)]
-fn solve_ilp(ilp:&ILP, start:Instant, H:i32, K:usize, silent:bool) -> Result<Vector, ILPError> { 
+fn solve_ilp(ilp:&ILP, start:Instant, H:f32, K:usize, silent:bool) -> Result<Vector, ILPError> { 
     // constants
     let (m,n) = ilp.A.size;
-    let b_bound = 4*H;
+    let b_bound = (4.0 * H).ceil() as i32;
 
     let mut solutions = LookupTable::with_capacity(1024);
     
@@ -106,7 +106,7 @@ fn solve_ilp(ilp:&ILP, start:Instant, H:i32, K:usize, silent:bool) -> Result<Vec
                     }
 
                     let insert = match solutions.get(&b) {
-                        Some(&(_,cost)) => { cost < c },
+                        Some(&(_,cost)) => cost < c,
                         None => true
                     };
 

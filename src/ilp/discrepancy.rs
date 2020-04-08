@@ -29,7 +29,9 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
 
     if !ilp.A.non_negative() {
         println!(" -> ILP might by unbounded. Testing Ax=0...");
-        let zero_ilp = ilp.clone();
+        let mut zero_ilp = ilp.clone();
+        zero_ilp.b = Vector::zero(ilp.b.len());
+        zero_ilp.delta_b = 0;
 
         if let Ok(x) = solve_ilp(&zero_ilp, start, H, compute_K(&zero_ilp), true) {
             if x.dot(&zero_ilp.c) > 0 {
@@ -139,7 +141,7 @@ fn solve_ilp(ilp:&ILP, start:Instant, H:f32, K:usize, silent:bool) -> Result<Vec
     }
 
     if !silent {
-        println!(" -> Done. Time elapsed: {:?}", start.elapsed());
+        println!(" -> Done. Final size: {}. {:?} elapsed.", solutions.len(), start.elapsed());
     }
 
     match solutions.get(&ilp.b) {

@@ -23,20 +23,16 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     let mut graph = VectorDiGraph::with_capacity(16384, columns);
 
     // construction surface
-    let mut surface:Vec<Vector> = Vec::with_capacity(16384);
-    let mut new_surface:Vec<Vector> = Vec::with_capacity(16384);
+    let mut surface:Vec<(Vector, NodeIdx)> = Vec::with_capacity(16384);
+    let mut new_surface:Vec<(Vector, NodeIdx)> = Vec::with_capacity(16384);
     let mut max_surface_size = 1;
 
     // add origin
     {
         let zero = Vector::zero(rows);
-        graph.add_node(zero.clone());
-        surface.push(zero);
+        graph.add_node(zero.clone(), 0, 0, 0);
+        surface.push((zero, 0));
     }
-
-    // bellman-ford data (distance, predecessor, matrix column [index] that was used to get to this node)
-    let mut bf_data = Vec::<(Cost, NodeIdx, ColumnIdx)>::with_capacity(16384);
-    bf_data.push((0,0,0));
 
     // construct graph
     print!(" -> Constructing the graph");
@@ -51,46 +47,47 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
         // pre-allocate memory for new nodes
         let max_new_nodes = surface.len() * columns;
         graph.reserve(max_new_nodes);
-        bf_data.reserve(max_new_nodes);
         new_surface.reserve(max_new_nodes);
 
         // grow graph
         depth = depth+1;
         bound = compute_bound(ilp, depth);
-        for x in surface.drain(0..surface.len()) {
-            let from_idx = graph.get_idx_by_vec(&x).unwrap();
+        for (x, node_idx) in surface.drain(0..surface.len()) {
+            let from = graph.get(node_idx).clone();
 
+            // iterate over matrix columns
             for (i, (v,&c)) in ilp.A.iter().zip(ilp.c.iter()).enumerate() {
+                // potentially new point
                 let xp = x.add(v);
                 let s = clamp(xp.dot(&ilp.b) as f32 * r, 0.0, 1.0);
 
                 // ||xp - d*b|| <= bound
                 if is_in_bounds(&xp, &b_float, s, bound) {
                     let cost = c as Cost;
-                    let to_distance = bf_data[from_idx].0 + cost;
+                    let to_cost = from.cost + cost;
 
-                    let to_idx = match graph.get_idx_by_vec(&xp) {
-                        Some(to_idx) => {
+                    let to_idx = match graph.get_node_by_vec_mut(&xp) {
+                        Some(node) => {
                             // this vector was already in the graph
 
                             // bellman-ford update 
-                            if to_distance > bf_data[to_idx].0 {
-                                bf_data[to_idx].0 = to_distance;
-                                bf_data[to_idx].1 = from_idx;
-                                bf_data[to_idx].2 = i as ColumnIdx;
+                            if to_cost > node.cost {
+                                node.predecessor = from.idx;
+                                node.cost = to_cost;
+                                node.via = i as ColumnIdx;
                             }
 
-                            to_idx
+                            node.idx
                         },
                         None => {
                             // add new node
-                            new_surface.push(xp.clone());
-                            bf_data.push((to_distance, from_idx, i as ColumnIdx));
-                            graph.add_node(xp)
+                            let idx = graph.add_node(xp.clone(), from.idx, to_cost, i as ColumnIdx);
+                            new_surface.push((xp, idx));
+                            idx
                         }
                     };
 
-                    graph.add_edge(from_idx, to_idx, cost, i as ColumnIdx);
+                    graph.add_edge(from.idx, to_idx, i as ColumnIdx);
                 }
             }
         }
@@ -113,8 +110,8 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     println!("    depth: {}, max. surface size: {}", depth, max_surface_size);
     println!("    radius: start={} end={}", compute_bound(ilp, 1), compute_bound(ilp, depth));
 
-    let b_idx = match graph.get_idx_by_vec(&ilp.b) {
-        Some(idx) => idx,
+    let b_node = match graph.get_node_by_vec(&ilp.b) {
+        Some(node) => node.clone(),
         None => return Err(ILPError::NoSolution)
     };
 
@@ -126,12 +123,15 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
         iterations += 1;
 
         for node_idx in graph.iter_nodes() {
-            for &(from, to, cost, i) in graph.iter_edges(node_idx) {
-                let to_distance = bf_data[from].0 + cost;
-                if to_distance > bf_data[to].0 {
-                    bf_data[to].0 = to_distance;
-                    bf_data[to].1 = from;
-                    bf_data[to].2 = i;
+            let node = graph.get(node_idx).clone();
+            for &(to, column) in node.edges.iter() {
+                let to_cost = node.cost + ilp.c.data[column];
+                let to_node = graph.get_mut(to);
+
+                if to_cost > to_node.cost {
+                    to_node.predecessor = node.idx;
+                    to_node.cost = to_cost;
+                    to_node.via = column;
 
                     changed = true;
                 }
@@ -144,29 +144,30 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     }
 
     println!(" -> {} Bellman-Ford iterations, t={:?}", iterations, start.elapsed());
-    println!(" -> Longest path cost: {}", bf_data[b_idx].0);
+    println!(" -> Longest path cost: {}", b_node.cost);
 
     // create solution vector
     println!(" -> Creating solution vector... t={:?}", start.elapsed());
 
     let mut x = Vector::zero(columns);
-    let mut node = b_idx;
+    let b_idx = b_node.idx;
+    let mut node = graph.get_node_by_vec_mut(&ilp.b).unwrap();
 
     // start from b and go backwards to 0
     loop {
-        let (_, predecessor, column) = bf_data[node];
+        let pre = node.predecessor;
 
-        if predecessor == b_idx {
+        if pre == b_idx {
             return Err(ILPError::Unbounded);
         } else {
             // mark node as visited
-            bf_data[node].1 = b_idx;
+            node.predecessor = b_idx;
         }
 
-        node = predecessor;
-        x.data[column as usize] += 1;
+        node = graph.get_mut(pre);
+        x.data[node.via as usize] += 1;
 
-        if node == 0 {
+        if node.idx == 0 {
             break;
         }
     }

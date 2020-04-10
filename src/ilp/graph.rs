@@ -1,23 +1,28 @@
 use std::ops::Range;
 use super::{Vector, Cost};
-use std::slice::Iter;
 
-type Map<K,V> = hashbrown::HashMap<K,V>; //fnv::FnvHashMap<T>;
-
+type Map<K,V> = hashbrown::HashMap<K,V>;
 pub type NodeIdx = usize;
 pub type ColumnIdx = usize;
 
-pub type Edge = (NodeIdx, NodeIdx, Cost, ColumnIdx);
+/*  A node contains its outgoing edges, thus an edge only
+    stores one end index and the column that was used.
+ */
+pub type Edge = (NodeIdx, ColumnIdx);
 
+#[derive(Clone)]
 pub struct Node {
-    idx: NodeIdx,
-    edges: Vec<Edge>
+    pub idx: NodeIdx,
+    pub predecessor: NodeIdx,
+    pub via: ColumnIdx,
+    pub cost: Cost,
+    pub edges: Vec<Edge>
 }
 
 pub struct VectorDiGraph {
     nodes: Vec<Node>,
     map: Map<Vector, NodeIdx>,
-    edges_per_node: usize,
+    edges_per_node: usize, // avoid re-allocation
     edges: usize
 }
 
@@ -44,17 +49,35 @@ impl VectorDiGraph {
         self.size() as NodeIdx
     }
 
-    pub fn get_idx_by_vec(&self, v:&Vector) -> Option<NodeIdx> {
+    pub fn get(&self, idx:NodeIdx) -> &Node {
+        &self.nodes[idx]
+    }
+
+    pub fn get_mut(&mut self, idx:NodeIdx) -> &mut Node {
+        &mut self.nodes[idx]
+    }
+
+    pub fn get_node_by_vec(&self, v:&Vector) -> Option<&Node> {
         match self.map.get(v) {
-            Some(&idx) => Some(idx),
+            Some(&idx) => Some(&self.nodes[idx]),
             None       => None
         }
     }
 
-    pub fn add_node(&mut self, v:Vector) -> NodeIdx {
+    pub fn get_node_by_vec_mut(&mut self, v:&Vector) -> Option<&mut Node> {
+        match self.map.get(v) {
+            Some(&idx) => Some(&mut self.nodes[idx]),
+            None       => None
+        }
+    }
+
+    pub fn add_node(&mut self, v:Vector, pre:NodeIdx, cost:Cost, via:ColumnIdx) -> NodeIdx {
         let node = Node {
             idx: self.next_idx(),
-            edges: Vec::with_capacity(self.edges_per_node)
+            edges: Vec::with_capacity(self.edges_per_node),
+            predecessor: pre,
+            via: via,
+            cost: cost
         };
         let node_idx = node.idx;
         self.nodes.push(node);
@@ -63,18 +86,14 @@ impl VectorDiGraph {
         node_idx
     }
 
-    pub fn add_edge(&mut self, from: NodeIdx, to: NodeIdx, cost: Cost, idx: ColumnIdx) {
-        let edge = (from, to, cost, idx);
+    pub fn add_edge(&mut self, from: NodeIdx, to: NodeIdx, idx: ColumnIdx) {
+        let edge = (to, idx);
         self.nodes[from].edges.push(edge);
         self.edges += 1;
     }
 
     pub fn iter_nodes(&self) -> Range<usize> {
         1..self.nodes.len()
-    }
-
-    pub fn iter_edges(&self, from_idx:usize) -> Iter<Edge> {
-        self.nodes[from_idx].edges.iter()
     }
 
     pub fn num_edges(&self) -> usize {

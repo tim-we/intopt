@@ -15,7 +15,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     let start = Instant::now();
 
     // constants
-    let r = 1.0 / ilp.b.norm();
+    let r = 1.0 / ilp.b.norm2() as f32;
     let (rows, columns) = ilp.A.size; // (m,n)
     let b_float = ilp.b.as_f32_vec();
 

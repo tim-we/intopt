@@ -238,11 +238,6 @@ impl Vector {
         sum
     }
 
-    pub fn norm(&self) -> f32 {
-        let x = self.norm2() as f32;
-        x.sqrt()
-    }
-
     pub fn inf_norm(&self) -> IntData {
         let mut max = self.data[0];
 
@@ -263,6 +258,16 @@ impl Vector {
         }
 
         sum
+    }
+
+    pub fn is_zero(&self) -> bool {
+        for &x in self.iter() {
+            if x != 0 {
+                return false;
+            }
+        }
+
+        true
     }
 
     pub fn as_f32_vec(&self) -> Vec<f32> {
@@ -350,14 +355,10 @@ impl Matrix {
     }
 
     pub fn has_zero_columns(&self) -> bool {
-        'column: for v in self.iter() {
-            for &x in v.iter() {
-                if x!=0 {
-                    continue 'column;
-                }
+        for v in self.iter() {
+            if v.is_zero() {
+                return true;
             }
-
-            return true;
         }
 
         false

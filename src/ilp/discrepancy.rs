@@ -5,6 +5,7 @@ use std::{f64, i32};
 
 type Map<K,V> = hashbrown::HashMap<K,V>;
 type LookupTable = Map<Vector, (Vector, Cost)>;
+type IterationData = (Vector, usize); // (scaled b, max iterations)
 
 /*
     based on https://arxiv.org/abs/1803.04744
@@ -15,44 +16,19 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
     let start = Instant::now();
 
     // constants
+    let (m,n) = ilp.A.size;
     #[allow(non_snake_case)]
     let H = ilp.A.herdisc_upper_bound();
     #[allow(non_snake_case)]
     let K = compute_K(ilp);
+    let b_bound = (4.0 * H).ceil() as i32;
+    let zero_check = !ilp.A.non_negative();
 
     println!(" -> H = {} >= herdisc(A)", H);
     println!(" -> K = {}", K);
 
-    let res = solve_ilp(ilp, start, H, K, false);
-
-    println!(" -> The ILP has a solution. {:?} elapsed.", start.elapsed());
-
-    if !ilp.A.non_negative() {
-        println!(" -> ILP might by unbounded. Testing Ax=0...");
-        let mut zero_ilp = ilp.clone();
-        zero_ilp.b = Vector::zero(ilp.b.len());
-        zero_ilp.delta_b = 0;
-
-        if let Ok(x) = solve_ilp(&zero_ilp, start, H, compute_K(&zero_ilp), true) {
-            if x.dot(&zero_ilp.c) > 0 {
-                println!(" -> Found a solution for Ax=0! {:?} elapsed.", start.elapsed());
-                return Err(ILPError::Unbounded);
-            }
-        }
-    }
-
-    println!(" -> ILP is bounded. {:?} elapsed.", start.elapsed());
-
-    res
-}
-
-#[allow(non_snake_case)]
-fn solve_ilp(ilp:&ILP, start:Instant, H:f32, K:usize, silent:bool) -> Result<Vector, ILPError> { 
-    // constants
-    let (m,n) = ilp.A.size;
-    let b_bound = (4.0 * H).ceil() as i32;
-
     let mut solutions = LookupTable::with_capacity(1024);
+    let mut has_zero_solution = false;
     
     // i=0 (trivial solutions)
     solutions.insert(Vector::zero(m), (Vector::zero(n), 0));
@@ -60,10 +36,10 @@ fn solve_ilp(ilp:&ILP, start:Instant, H:f32, K:usize, silent:bool) -> Result<Vec
         solutions.insert(column.clone(), (Vector::unit(n, i), cost));
     }
 
-    // pre-compute main iteration (scaled b, max iterations)
-    let mut iterations = Vec::<(Vector, usize)>::new();
+    // pre-compute main iteration
+    let mut iterations = Vec::<IterationData>::new();
     {
-        let mut last = (compute_sb(&ilp.b, K, 1), 1); // i=1
+        let mut last = (compute_sb(&Vector::zero(m), K, 1), 1); // i=1
 
         // i={1,...,K}
         for i in 1..K+1 {
@@ -82,19 +58,21 @@ fn solve_ilp(ilp:&ILP, start:Instant, H:f32, K:usize, silent:bool) -> Result<Vec
         }
 
         assert_eq!(last.0, ilp.b);
-        if !silent {
-            println!(" -> Iterations: {}", iterations.len());
-        }
+        println!(" -> Iterations: {}", iterations.len());
     }
 
     let mut last_solutions = solutions.clone();
     let mut new_solutions  = LookupTable::with_capacity(512);
+    let mut x_bound:f64 = 1.0;
     
     println!(" -> Building lookup table...");
     for (sb, it_max) in iterations {
         println!("    > size: {}", solutions.len());
 
         for j in 0..it_max {
+            x_bound *= 1.2;
+            let x_ibound = f64::min(i32::MAX as f64, x_bound.ceil()) as i32;
+
             // generate new solutions
             let iterator = if j==0 { solutions.iter() } else { last_solutions.iter() };
             for (k, (b1, (x1,c1))) in iterator.enumerate() {
@@ -103,7 +81,14 @@ fn solve_ilp(ilp:&ILP, start:Instant, H:f32, K:usize, silent:bool) -> Result<Vec
                     let x = x1.add(x2);
                     let c = c1+c2;
 
-                    if !sb.max_distance(&b, b_bound) {
+                    if zero_check {
+                        if b.is_zero() && x.dot(&ilp.c) > 0 {
+                            has_zero_solution = true;
+                            println!(" -> Found a solution for Ax=0! ILP might be unbounded.");
+                        }
+                    }
+
+                    if !sb.max_distance(&b, b_bound) || x.one_norm() > x_ibound {
                         continue;
                     }
 
@@ -140,16 +125,19 @@ fn solve_ilp(ilp:&ILP, start:Instant, H:f32, K:usize, silent:bool) -> Result<Vec
         last_solutions.clear();
     }
 
-    if !silent {
-        println!(" -> Done. Final size: {}. {:?} elapsed.", solutions.len(), start.elapsed());
-    }
+    println!(" -> Done. Final size: {}.", solutions.len());
+    println!(" -> {:?} elapsed.", start.elapsed());
 
     match solutions.get(&ilp.b) {
         Some((x,_)) => {
-            if !silent {
+            // the ILP is unbounded iff Ax=b has a solution and Ax=0, cx>0 has a solution
+            if has_zero_solution {
+                return Err(ILPError::Unbounded);
+            } else {
+                println!(" -> The ILP has a (bounded) solution.");
                 println!(" -> Solution cost: {}", x.dot(&ilp.c));
+                Ok(x.clone())
             }
-            Ok(x.clone())
         },
         None => Err(ILPError::NoSolution)
     }

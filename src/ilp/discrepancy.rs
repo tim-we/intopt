@@ -81,7 +81,7 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
                     let x = x1.add(x2);
                     let c = c1+c2;
 
-                    if zero_check {
+                    if zero_check && !has_zero_solution {
                         if b.is_zero() && x.dot(&ilp.c) > 0 {
                             has_zero_solution = true;
                             println!(" -> Found a solution for Ax=0! ILP might be unbounded.");

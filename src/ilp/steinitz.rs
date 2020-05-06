@@ -164,8 +164,8 @@ pub fn solve(ilp:&ILP) -> Result<Vector, ILPError> {
             node.predecessor = b_idx;
         }
 
-        node = graph.get_mut(pre);
         x.data[node.via as usize] += 1;
+        node = graph.get_mut(pre);
 
         if node.idx == 0 {
             break;
